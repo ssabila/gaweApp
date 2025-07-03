@@ -64,12 +64,20 @@ public class ManagerDashboard extends Application {
             ManagerDashboardController controller = (ManagerDashboardController) controllerObj;
             System.out.println("✅ Controller obtained successfully");
 
-            // Configure controller
-            controller.setManager(manager);
+            // CRITICAL FIX: Set manager and dataStore in the correct order
+            // DataStore must be set before manager to avoid issues in initializeContent()
+            System.out.println("Setting DataStore...");
             controller.setDataStore(dataStore);
+
+            System.out.println("Setting Stage...");
             controller.setStage(stage);
+
+            System.out.println("Setting Manager...");
+            controller.setManager(manager); // This will call initializeContent() internally
+
             System.out.println("✅ Controller configured successfully");
 
+            // Create scene and show
             Scene scene = new Scene(root, 1600, 900);
             stage.setScene(scene);
             stage.setTitle("GAWE - Manager Dashboard - " + manager.getNama());
@@ -94,14 +102,19 @@ public class ManagerDashboard extends Application {
     }
 
     private void showAlert(Stage ownerStage, String title, String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        if (ownerStage != null) {
-            alert.initOwner(ownerStage);
+        try {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            if (ownerStage != null) {
+                alert.initOwner(ownerStage);
+            }
+            alert.showAndWait();
+        } catch (Exception e) {
+            System.err.println("Error showing alert: " + e.getMessage());
+            e.printStackTrace();
         }
-        alert.showAndWait();
     }
 
     public static void main(String[] args) {

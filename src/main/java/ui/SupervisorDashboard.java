@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class SupervisorDashboard extends Application {
     private final Employee supervisor;
-    private static MySQLDataStore dataStore; // Using static to be consistent with HelloApplication's dataStore
+    private static MySQLDataStore dataStore;
 
     private static final Logger logger = Logger.getLogger(SupervisorDashboard.class.getName());
 
@@ -25,49 +25,100 @@ public class SupervisorDashboard extends Application {
         this.supervisor = supervisor;
         // Ensure dataStore is initialized, similar to HelloApplication
         if (dataStore == null) {
-            dataStore = HelloApplication.getDataStore(); // Get shared DataStore instance
+            dataStore = HelloApplication.getDataStore();
             if (dataStore == null) {
-                logger.severe("MySQLDataStore is null when initializing SupervisorDashboard. Exiting.");
-                // This scenario should ideally be handled earlier in HelloApplication's init/start
-                // For robustness, adding a check here.
+                logger.severe("MySQLDataStore is null when initializing SupervisorDashboard");
             }
         }
     }
 
     @Override
     public void start(Stage stage) throws IOException {
+        System.out.println("=== STARTING SUPERVISOR DASHBOARD ===");
+        System.out.println("Supervisor: " + supervisor.getNama());
+        System.out.println("DataStore available: " + (dataStore != null ? "Yes" : "No"));
+
         if (dataStore == null) {
-            // If dataStore is still null (e.g., direct launch of SupervisorDashboard without HelloApplication init)
             showAlert(stage, "Database Error", "Database connection not initialized. Please launch the application from HelloApplication.");
             return;
         }
 
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SupervisorDashboardView.fxml"));
-        BorderPane root = fxmlLoader.load();
+        try {
+            System.out.println("Loading SupervisorDashboardView.fxml...");
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/ui/SupervisorDashboardView.fxml"));
 
-        SupervisorDashboardController controller = fxmlLoader.getController();
-        controller.setSupervisor(supervisor);
-        controller.setDataStore(dataStore);
-        controller.setStage(stage); // Pass the stage to the controller for logout/closing
+            if (fxmlLoader.getLocation() == null) {
+                throw new IOException("SupervisorDashboardView.fxml not found at /ui/SupervisorDashboardView.fxml");
+            }
 
-        Scene scene = new Scene(root, 1600, 900);
-        stage.setScene(scene);
-        stage.show();
+            System.out.println("FXML file found, loading...");
+            BorderPane root = fxmlLoader.load();
+            System.out.println("✅ FXML loaded successfully");
+
+            Object controllerObj = fxmlLoader.getController();
+            if (controllerObj == null) {
+                throw new IOException("Controller is null - check fx:controller in FXML");
+            }
+
+            if (!(controllerObj instanceof SupervisorDashboardController)) {
+                throw new IOException("Controller is not SupervisorDashboardController instance: " + controllerObj.getClass());
+            }
+
+            SupervisorDashboardController controller = (SupervisorDashboardController) controllerObj;
+            System.out.println("✅ Controller obtained successfully");
+
+            // CRITICAL FIX: Set dataStore and stage before supervisor
+            System.out.println("Setting DataStore...");
+            controller.setDataStore(dataStore);
+
+            System.out.println("Setting Stage...");
+            controller.setStage(stage);
+
+            System.out.println("Setting Supervisor...");
+            controller.setSupervisor(supervisor); // This will call initializeContent() internally
+
+            System.out.println("✅ Controller configured successfully");
+
+            // Create scene and show
+            Scene scene = new Scene(root, 1600, 900);
+            stage.setScene(scene);
+            stage.setTitle("GAWE - Supervisor Dashboard - " + supervisor.getNama());
+            stage.show();
+
+            System.out.println("✅ Supervisor Dashboard displayed successfully");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error loading Supervisor Dashboard: " + e.getMessage());
+            e.printStackTrace();
+
+            showAlert(stage, "Dashboard Error",
+                    "Failed to load Supervisor Dashboard.\n\n" +
+                            "Error: " + e.getMessage() + "\n\n" +
+                            "Please ensure:\n" +
+                            "1. SupervisorDashboardView.fxml exists in src/main/resources/ui/\n" +
+                            "2. SupervisorDashboardController.java exists in src/main/java/ui/\n" +
+                            "3. fx:controller=\"ui.SupervisorDashboardController\" is set in FXML");
+
+            throw new IOException("Failed to load Supervisor Dashboard", e);
+        }
     }
 
     private void showAlert(Stage ownerStage, String title, String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        if (ownerStage != null) {
-            alert.initOwner(ownerStage);
+        try {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            if (ownerStage != null) {
+                alert.initOwner(ownerStage);
+            }
+            alert.showAndWait();
+        } catch (Exception e) {
+            System.err.println("Error showing alert: " + e.getMessage());
+            e.printStackTrace();
         }
-        alert.showAndWait();
     }
 
-    // This main method is primarily for direct testing.
-    // The dashboard should be launched through HelloApplication
     public static void main(String[] args) {
         throw new UnsupportedOperationException(
                 "SupervisorDashboard should be launched through HelloApplication");
