@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.*?>
+
+<BorderPane style="-fx-background-color: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="id.ac.stis.pbo.demo1.LoginController">
+    <center>
+        <VBox alignment="CENTER" maxWidth="400.0" padding="40.0" spacing="20.0" style="-fx-background-color: rgba(255, 255, 255, 0.95); -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 10);">
+            <children>
+                <Label text="GAWE">
+                    <font>
+                        <Font name="Segoe UI Bold" size="36.0" />
+                    </font>
+                    <textFill>
+                        <Color fx:constant="WEB" value="#2c3e50" />
+                    </textFill>
+                </Label>
+                <Label text="Employee Management System (MySQL)">
+                    <font>
+                        <Font name="Segoe UI" size="14.0" />
+                    </font>
+                    <textFill>
+                        <Color fx:constant="WEB" value="#7f8c8d" />
+                    </textFill>
+                </Label>
+                <Label text="✅ Connected to MySQL Database">
+                    <font>
+                        <Font name="Segoe UI" size="12.0" />
+                    </font>
+                    <textFill>
+                        <Color fx:constant="WEB" value="#27ae60" />
+                    </textFill>
+                </Label>
+                <GridPane alignment="CENTER" hgap="10.0" vgap="15.0">
+                    <columnConstraints>
+                        <ColumnConstraints halignment="RIGHT" hgrow="SOMETIMES" maxWidth="150.0" minWidth="10.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="250.0" minWidth="10.0" prefWidth="250.0" />
+                    </columnConstraints>
+                    <rowConstraints>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                    </rowConstraints>
+                    <children>
+                        <Label text="Employee ID:">
+                            <font>
+                                <Font name="Segoe UI Medium" size="12.0" />
+                            </font>
+                        </Label>
+                        <TextField fx:id="employeeIdField" promptText="Enter your employee ID" style="-fx-padding: 12; -fx-background-radius: 8; -fx-border-color: #bdc3c7; -fx-border-radius: 8;" GridPane.columnIndex="1" />
+                        <Label text="Password:" GridPane.rowIndex="1">
+                            <font>
+                                <Font name="Segoe UI Medium" size="12.0" />
+                            </font>
+                        </Label>
+                        <PasswordField fx:id="passwordField" promptText="Enter your password" style="-fx-padding: 12; -fx-background-radius: 8; -fx-border-color: #bdc3c7; -fx-border-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    </children>
+                </GridPane>
+                <Button onAction="#handleLogin" prefWidth="250.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 12; -fx-background-radius: 8; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;" text="Login">
+                    <VBox.margin>
+                        <Insets top="10.0" />
+                    </VBox.margin>
+                </Button>
+                <Label text="Demo Credentials:">
+                    <font>
+                        <Font name="Segoe UI Bold" size="12.0" />
+                    </font>
+                    <textFill>
+                        <Color fx:constant="WEB" value="#2c3e50" />
+                    </textFill>
+                </Label>
+                <VBox alignment="CENTER" spacing="5.0">
+                    <children>
+                        <Label text="Manager: MNG001 / password123">
+                            <font>
+                                <Font name="Segoe UI" size="10.0" />
+                            </font>
+                            <textFill>
+                                <Color fx:constant="WEB" value="#7f8c8d" />
+                            </textFill>
+                        </Label>
+                        <Label text="Supervisor: SUP001 / password123">
+                            <font>
+                                <Font name="Segoe UI" size="10.0" />
+                            </font>
+                            <textFill>
+                                <Color fx:constant="WEB" value="#7f8c8d" />
+                            </textFill>
+                        </Label>
+                        <Label text="Employee: EMP001 / password123">
+                            <font>
+                                <Font name="Segoe UI" size="10.0" />
+                            </font>
+                            <textFill>
+                                <Color fx:constant="WEB" value="#7f8c8d" />
+                            </textFill>
+                        </Label>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

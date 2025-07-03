@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="rootPane" stylesheets="@../dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="id.ac.stis.pbo.demo1.ui.EmployeeDashboardController">
+    <top>
+        <HBox alignment="CENTER_LEFT" styleClass="header-box">
+            <padding>
+                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+            </padding>
+            <children>
+                <Label styleClass="header-title" text="GAWE - Employee Dashboard" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" />
+                <Button onAction="#handleLogout" styleClass="logout-button" text="Logout">
+                    <HBox.margin>
+                        <Insets left="20.0" />
+                    </HBox.margin>
+                </Button>
+            </children>
+        </HBox>
+    </top>
+    <left>
+        <VBox styleClass="navigation-sidebar">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+            </padding>
+            <children>
+                <Label styleClass="nav-title" text="Navigation" />
+                <Separator styleClass="nav-separator" />
+                <VBox fx:id="navButtonContainer" spacing="5.0">
+                </VBox>
+            </children>
+        </VBox>
+    </left>
+    <center>
+        <StackPane fx:id="contentArea" styleClass="content-area">
+            <padding>
+                <Insets all="20.0" />
+            </padding>
+        </StackPane>
+    </center>
+</BorderPane>
