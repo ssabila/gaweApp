@@ -1,16 +1,24 @@
-module id.ac.stis.pbo.demo1 {
+module gawe {
     requires javafx.controls;
     requires javafx.fxml;
-    requires com.zaxxer.hikari;
+    requires java.desktop;
     requires com.google.gson;
-    requires java.sql; // Add this if not present
 
-    opens id.ac.stis.pbo.demo1 to javafx.fxml;
-    opens id.ac.stis.pbo.demo1.ui to javafx.fxml; // Ensure this is open
-    exports id.ac.stis.pbo.demo1;
-    exports id.ac.stis.pbo.demo1.data;
-    exports id.ac.stis.pbo.demo1.database;
-    exports id.ac.stis.pbo.demo1.models;
-    exports id.ac.stis.pbo.demo1.server;
-    exports id.ac.stis.pbo.demo1.ui; // Export the UI package
+    // MySQL JDBC driver
+    requires java.sql.rowset;
+    requires com.zaxxer.hikari;
+
+    // Export packages for reflection access
+    exports app;
+    exports ui;
+    exports models;
+    exports data;
+    exports database;
+    exports server;
+
+    // Open packages for FXML loading and reflection
+    opens app to javafx.fxml, com.google.gson;
+    opens ui to javafx.fxml, com.google.gson;
+    opens models to com.google.gson, javafx.base;
+    opens data to com.google.gson;
 }
