@@ -12,47 +12,85 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-/**
- * Manager Dashboard Application - now acts as a View Loader following MVC pattern.
- */
 public class ManagerDashboard extends Application {
     private final Employee manager;
-    private static MySQLDataStore dataStore; // Using static to be consistent with HelloApplication's dataStore
+    private static MySQLDataStore dataStore;
 
     private static final Logger logger = Logger.getLogger(ManagerDashboard.class.getName());
 
     public ManagerDashboard(Employee manager) {
         this.manager = manager;
-        // Ensure dataStore is initialized, similar to HelloApplication
+        // Get dataStore from HelloApplication
         if (dataStore == null) {
-            dataStore = HelloApplication.getDataStore(); // Get shared DataStore instance
+            dataStore = HelloApplication.getDataStore();
             if (dataStore == null) {
-                logger.severe("MySQLDataStore is null when initializing ManagerDashboard. Exiting.");
-                // This scenario should ideally be handled earlier in HelloApplication's init/start
-                // For robustness, adding a check here.
+                logger.severe("MySQLDataStore is null when initializing ManagerDashboard");
             }
         }
     }
 
     @Override
     public void start(Stage stage) throws IOException {
+        System.out.println("=== STARTING MANAGER DASHBOARD ===");
+        System.out.println("Manager: " + manager.getNama());
+        System.out.println("DataStore available: " + (dataStore != null ? "Yes" : "No"));
+
         if (dataStore == null) {
-            // If dataStore is still null (e.g., direct launch of ManagerDashboard without HelloApplication init)
-            showAlert(stage, "Database Error", "Database connection not initialized. Please launch the application from HelloApplication.");
+            showAlert(stage, "Database Error", "Database connection not available. Please restart the application.");
             return;
         }
 
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("ManagerDashboardView.fxml"));
-        BorderPane root = fxmlLoader.load();
+        try {
+            System.out.println("Loading ManagerDashboardView.fxml...");
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/ui/ManagerDashboardView.fxml"));
 
-        ManagerDashboardController controller = fxmlLoader.getController();
-        controller.setManager(manager);
-        controller.setDataStore(dataStore);
-        controller.setStage(stage); // Pass the stage to the controller for logout/closing
+            if (fxmlLoader.getLocation() == null) {
+                throw new IOException("ManagerDashboardView.fxml not found at /ui/ManagerDashboardView.fxml");
+            }
 
-        Scene scene = new Scene(root, 1600, 900);
-        stage.setScene(scene);
-        stage.show();
+            System.out.println("FXML file found, loading...");
+            BorderPane root = fxmlLoader.load();
+            System.out.println("✅ FXML loaded successfully");
+
+            Object controllerObj = fxmlLoader.getController();
+            if (controllerObj == null) {
+                throw new IOException("Controller is null - check fx:controller in FXML");
+            }
+
+            if (!(controllerObj instanceof ManagerDashboardController)) {
+                throw new IOException("Controller is not ManagerDashboardController instance: " + controllerObj.getClass());
+            }
+
+            ManagerDashboardController controller = (ManagerDashboardController) controllerObj;
+            System.out.println("✅ Controller obtained successfully");
+
+            // Configure controller
+            controller.setManager(manager);
+            controller.setDataStore(dataStore);
+            controller.setStage(stage);
+            System.out.println("✅ Controller configured successfully");
+
+            Scene scene = new Scene(root, 1600, 900);
+            stage.setScene(scene);
+            stage.setTitle("GAWE - Manager Dashboard - " + manager.getNama());
+            stage.show();
+
+            System.out.println("✅ Manager Dashboard displayed successfully");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error loading Manager Dashboard: " + e.getMessage());
+            e.printStackTrace();
+
+            showAlert(stage, "Dashboard Error",
+                    "Failed to load Manager Dashboard.\n\n" +
+                            "Error: " + e.getMessage() + "\n\n" +
+                            "Please ensure:\n" +
+                            "1. ManagerDashboardView.fxml exists in src/main/resources/ui/\n" +
+                            "2. ManagerDashboardController.java exists in src/main/java/ui/\n" +
+                            "3. fx:controller=\"ui.ManagerDashboardController\" is set in FXML");
+
+            throw new IOException("Failed to load Manager Dashboard", e);
+        }
     }
 
     private void showAlert(Stage ownerStage, String title, String message) {
@@ -66,25 +104,20 @@ public class ManagerDashboard extends Application {
         alert.showAndWait();
     }
 
-    // This main method is primarily for direct testing.
-    // In a full application, ManagerDashboard would typically be launched from HelloApplication.
     public static void main(String[] args) {
-        // Initialize a dummy manager for direct testing if needed
-        Employee manager = new Employee("MNG001", "John Manager", "password123",
-                "manajer", "HR", "General Manager", new java.util.Date());
+        // For testing - should not be called directly in normal flow
+        Employee testManager = new Employee("MNG001", "Test Manager", "password123", "manajer", "HR", "General Manager", new java.util.Date());
 
-        // For direct testing, you might need to initialize MySQLDataStore manually
-        // if not starting from HelloApplication
         if (dataStore == null) {
             try {
                 dataStore = new MySQLDataStore();
                 System.out.println("MySQL DataStore initialized for direct ManagerDashboard launch.");
             } catch (Exception e) {
-                System.err.println("Failed to initialize MySQL DataStore for direct launch: " + e.getMessage());
-                // Handle error appropriately, e.g., exit
+                System.err.println("Failed to initialize MySQL DataStore: " + e.getMessage());
                 return;
             }
         }
-        launch(args);
+
+        new ManagerDashboard(testManager).launch(args);
     }
 }
