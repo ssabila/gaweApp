@@ -397,19 +397,116 @@ public class EmployeeDashboardController {
         return table;
     }
 
-    // Add placeholder methods for other features with null checks
     private void showMyMeetings() {
         if (employee == null || dataStore == null || contentArea == null) {
             return;
         }
-        // Implementation remains the same but with null checks
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("My Meetings");
+        title.getStyleClass().add("content-title");
+
+        TableView<Meeting> meetingsTable = createMyMeetingsTable();
+
+        content.getChildren().addAll(title, meetingsTable);
+        contentArea.getChildren().add(content);
+    }
+
+    private TableView<Meeting> createMyMeetingsTable() {
+        TableView<Meeting> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
+
+        TableColumn<Meeting, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("lokasi"));
+
+        TableColumn<Meeting, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol, statusCol);
+
+        if (dataStore != null && employee != null) {
+            List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(employee.getId());
+            table.setItems(FXCollections.observableArrayList(myMeetings));
+        }
+        table.setPrefHeight(400);
+
+        return table;
     }
 
     private void showMyLeaveRequests() {
         if (employee == null || dataStore == null || contentArea == null) {
             return;
         }
-        // Implementation remains the same but with null checks
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("My Leave Requests");
+        title.getStyleClass().add("content-title");
+
+        Button newRequestBtn = new Button("➕ New Leave Request");
+        newRequestBtn.getStyleClass().add("action-button-green");
+        newRequestBtn.setOnAction(e -> showLeaveRequestDialog());
+
+        TableView<LeaveRequest> leaveTable = createMyLeaveRequestsTable();
+
+        content.getChildren().addAll(title, newRequestBtn, leaveTable);
+        contentArea.getChildren().add(content);
+    }
+
+    private TableView<LeaveRequest> createMyLeaveRequestsTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("End Date");
+        endDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("Approval Notes");
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
+
+        table.getColumns().addAll(typeCol, startDateCol, endDateCol, daysCol, statusCol, notesCol);
+
+        if (dataStore != null && employee != null) {
+            List<LeaveRequest> myLeaveRequests = dataStore.getLeaveRequestsByEmployee(employee.getId());
+            table.setItems(FXCollections.observableArrayList(myLeaveRequests));
+        }
+        table.setPrefHeight(400);
+
+        return table;
     }
 
     private void showLeaveRequestDialog() {
@@ -508,7 +605,134 @@ public class EmployeeDashboardController {
         if (employee == null || dataStore == null || contentArea == null) {
             return;
         }
-        // Implementation remains the same but with null checks
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("My Salary Information");
+        title.getStyleClass().add("content-title");
+
+        // Current Salary Breakdown
+        VBox currentSalaryBox = createCurrentSalaryBreakdown();
+
+        // Salary History Table
+        TableView<SalaryHistory> salaryHistoryTable = createSalaryHistoryTable();
+
+        content.getChildren().addAll(title, currentSalaryBox, salaryHistoryTable);
+        contentArea.getChildren().add(content);
+    }
+
+    private VBox createCurrentSalaryBreakdown() {
+        VBox salaryBox = new VBox(15);
+        salaryBox.getStyleClass().add("salary-breakdown-box");
+        salaryBox.setPadding(new Insets(20));
+
+        Label breakdownTitle = new Label("Current Month Salary Breakdown");
+        breakdownTitle.getStyleClass().add("section-title");
+
+        GridPane salaryGrid = new GridPane();
+        salaryGrid.setHgap(20);
+        salaryGrid.setVgap(10);
+
+        // Calculate current salary
+        double baseSalary = employee.getGajiPokok();
+        double kpiBonus = calculateKPIBonus(employee.getKpiScore(), baseSalary);
+        double supervisorBonus = calculateSupervisorBonus(employee.getSupervisorRating(), baseSalary);
+        double penalty = calculatePenalty(employee.getKpiScore(), employee.getSupervisorRating(), baseSalary);
+        double totalSalary = baseSalary + kpiBonus + supervisorBonus - penalty;
+
+        int row = 0;
+        addSalaryRow(salaryGrid, "Base Salary:", String.format("Rp %,.0f", baseSalary), row++);
+        addSalaryRow(salaryGrid, "KPI Bonus (" + df.format(employee.getKpiScore()) + "%):", String.format("Rp %,.0f", kpiBonus), row++);
+        addSalaryRow(salaryGrid, "Supervisor Bonus (" + df.format(employee.getSupervisorRating()) + "%):", String.format("Rp %,.0f", supervisorBonus), row++);
+        if (penalty > 0) {
+            addSalaryRow(salaryGrid, "Performance Penalty:", String.format("- Rp %,.0f", penalty), row++);
+        }
+
+        Separator separator = new Separator();
+        salaryGrid.add(separator, 0, row, 2, 1);
+        row++;
+
+        Label totalLabel = new Label("Total Salary:");
+        totalLabel.getStyleClass().add("total-salary");
+        Label totalValue = new Label(String.format("Rp %,.0f", totalSalary));
+        totalValue.getStyleClass().add("total-salary");
+
+        salaryGrid.add(totalLabel, 0, row);
+        salaryGrid.add(totalValue, 1, row);
+
+        salaryBox.getChildren().addAll(breakdownTitle, salaryGrid);
+        return salaryBox;
+    }
+
+    private void addSalaryRow(GridPane grid, String label, String value, int row) {
+        Label labelNode = new Label(label);
+        Label valueNode = new Label(value);
+        grid.add(labelNode, 0, row);
+        grid.add(valueNode, 1, row);
+    }
+
+    private double calculateKPIBonus(double kpiScore, double baseSalary) {
+        if (kpiScore >= 90) return baseSalary * 0.20;
+        else if (kpiScore >= 80) return baseSalary * 0.15;
+        else if (kpiScore >= 70) return baseSalary * 0.10;
+        else if (kpiScore >= 60) return baseSalary * 0.05;
+        return 0;
+    }
+
+    private double calculateSupervisorBonus(double supervisorRating, double baseSalary) {
+        if (supervisorRating >= 90) return baseSalary * 0.15;
+        else if (supervisorRating >= 80) return baseSalary * 0.10;
+        else if (supervisorRating >= 70) return baseSalary * 0.05;
+        return 0;
+    }
+
+    private double calculatePenalty(double kpiScore, double supervisorRating, double baseSalary) {
+        if (kpiScore < 60 || supervisorRating < 60) {
+            return baseSalary * 0.10;
+        }
+        return 0;
+    }
+
+    private TableView<SalaryHistory> createSalaryHistoryTable() {
+        TableView<SalaryHistory> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+
+        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+
+        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getBaseSalary())));
+
+        TableColumn<SalaryHistory, String> kpiBonusCol = new TableColumn<>("KPI Bonus");
+        kpiBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getKpiBonus())));
+
+        TableColumn<SalaryHistory, String> supervisorBonusCol = new TableColumn<>("Supervisor Bonus");
+        supervisorBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getSupervisorBonus())));
+
+        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("Total Salary");
+        totalSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getTotalSalary())));
+
+        table.getColumns().addAll(monthCol, yearCol, baseSalaryCol, kpiBonusCol, supervisorBonusCol, totalSalaryCol);
+
+        if (dataStore != null && employee != null) {
+            List<SalaryHistory> mySalaryHistory = dataStore.getSalaryHistoryByEmployee(employee.getId());
+            table.setItems(FXCollections.observableArrayList(mySalaryHistory));
+        }
+        table.setPrefHeight(300);
+
+        return table;
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {

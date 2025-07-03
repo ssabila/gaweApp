@@ -3,6 +3,7 @@ ui\LeaveRequestApprovalDialog.class
 ui\EmployeeDashboardController$2.class
 app\MinimalTestApp.class
 ui\ManagerDashboardController$3.class
+ui\SupervisorDashboardController$2.class
 ui\ManagerDashboard.class
 ui\EmployeeDashboardController.class
 server\GaweServer.class
@@ -16,8 +17,10 @@ ui\EmployeeDashboardController$1.class
 data\DataStore$MonthlyEvaluation.class
 database\DatabaseException$QueryException.class
 models\EmployeeEvaluation.class
+ui\SupervisorDashboardController$1.class
 models\Attendance.class
 models\Meeting.class
+ui\SupervisorDashboardController$4.class
 app\LoginController.class
 models\KPI.class
 database\DatabaseConfig.class
@@ -33,6 +36,7 @@ data\MySQLDataStore$MonthlyEvaluation.class
 app\HelloApplication.class
 app\TestDashboardFiles.class
 models\ServerRequest.class
+ui\SupervisorDashboardController$3.class
 models\SalaryHistory.class
 models\LeaveRequest.class
 app\TestDatabaseConnection.class

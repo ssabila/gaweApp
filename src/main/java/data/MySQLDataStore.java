@@ -233,9 +233,6 @@ public class MySQLDataStore implements IDataStore {
         }
     }
 
-    // Rest of the methods remain the same, just showing the pattern...
-    // Adding all other required methods with similar error handling
-
     @Override
     public List<Report> getAllReports() {
         List<Report> reports = new ArrayList<>();
@@ -270,9 +267,653 @@ public class MySQLDataStore implements IDataStore {
         return reports;
     }
 
-    // Add all other interface methods...
-    // For brevity, I'll include key methods and mapping functions
+    @Override
+    public List<Report> getReportsByDivision(String divisi) {
+        List<Report> reports = new ArrayList<>();
+        String query = "SELECT * FROM reports WHERE divisi = ? ORDER BY upload_date DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, divisi);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                reports.add(mapResultSetToReport(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting reports by division: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve reports by division", e);
+        }
+        return reports;
+    }
 
+    @Override
+    public boolean saveReport(String supervisorId, String divisi, int bulan, int tahun, String filePath) {
+        String query = "INSERT INTO reports (supervisor_id, divisi, bulan, tahun, file_path, upload_date, status) VALUES (?, ?, ?, ?, ?, NOW(), 'pending')";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, supervisorId);
+            pstmt.setString(2, divisi);
+            pstmt.setInt(3, bulan);
+            pstmt.setInt(4, tahun);
+            pstmt.setString(5, filePath);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error saving report: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateReportStatus(int reportId, String status, String managerNotes, String reviewedBy) {
+        String query = "UPDATE reports SET status = ?, manager_notes = ?, reviewed_by = ?, reviewed_date = NOW() WHERE id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, status);
+            pstmt.setString(2, managerNotes);
+            pstmt.setString(3, reviewedBy);
+            pstmt.setInt(4, reportId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error updating report status: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<Attendance> getAttendanceByEmployee(String employeeId) {
+        List<Attendance> attendanceList = new ArrayList<>();
+        String query = "SELECT * FROM attendance WHERE employee_id = ? ORDER BY tanggal DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                attendanceList.add(mapResultSetToAttendance(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting attendance by employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve attendance", e);
+        }
+        return attendanceList;
+    }
+
+    @Override
+    public List<Attendance> getTodayAttendance(String employeeId) {
+        List<Attendance> attendanceList = new ArrayList<>();
+        String query = "SELECT * FROM attendance WHERE employee_id = ? AND DATE(tanggal) = CURDATE()";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                attendanceList.add(mapResultSetToAttendance(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting today's attendance: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve today's attendance", e);
+        }
+        return attendanceList;
+    }
+
+    @Override
+    public boolean saveAttendance(String employeeId, Date tanggal, String jamMasuk, String jamKeluar, String status) {
+        String query = "INSERT INTO attendance (employee_id, tanggal, jam_masuk, jam_keluar, status, is_late) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE jam_masuk = VALUES(jam_masuk), jam_keluar = VALUES(jam_keluar), status = VALUES(status)";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setDate(2, new java.sql.Date(tanggal.getTime()));
+            if (jamMasuk != null && !jamMasuk.isEmpty()) {
+                pstmt.setTime(3, Time.valueOf(jamMasuk + ":00"));
+            } else {
+                pstmt.setNull(3, Types.TIME);
+            }
+            if (jamKeluar != null && !jamKeluar.isEmpty()) {
+                pstmt.setTime(4, Time.valueOf(jamKeluar + ":00"));
+            } else {
+                pstmt.setNull(4, Types.TIME);
+            }
+            pstmt.setString(5, status);
+            pstmt.setBoolean(6, isLateArrival(jamMasuk));
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error saving attendance: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateAttendanceClockOut(String employeeId, String jamKeluar) {
+        String query = "UPDATE attendance SET jam_keluar = ? WHERE employee_id = ? AND DATE(tanggal) = CURDATE()";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setTime(1, Time.valueOf(jamKeluar + ":00"));
+            pstmt.setString(2, employeeId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error updating clock out: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isLateArrival(String jamMasuk) {
+        if (jamMasuk == null) return false;
+        try {
+            String[] parts = jamMasuk.split(":");
+            int hour = Integer.parseInt(parts[0]);
+            int minute = Integer.parseInt(parts[1]);
+            return hour > 8 || (hour == 8 && minute > 30);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public List<Meeting> getMeetingsByEmployee(String employeeId) {
+        List<Meeting> meetings = new ArrayList<>();
+        String query = """
+            SELECT DISTINCT m.* FROM meetings m 
+            LEFT JOIN meeting_participants mp ON m.id = mp.meeting_id 
+            WHERE m.organizer_id = ? OR mp.participant_id = ? 
+            ORDER BY m.tanggal ASC
+            """;
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setString(2, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                meetings.add(mapResultSetToMeeting(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting meetings by employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve meetings", e);
+        }
+        return meetings;
+    }
+
+    @Override
+    public boolean saveMeeting(String title, String description, Date tanggal, String waktuMulai,
+                               String waktuSelesai, String lokasi, String organizerId, List<String> participantIds) {
+        String insertMeetingQuery = "INSERT INTO meetings (title, description, tanggal, waktu_mulai, waktu_selesai, lokasi, organizer_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled')";
+        String insertParticipantQuery = "INSERT INTO meeting_participants (meeting_id, participant_id) VALUES (?, ?)";
+
+        try (Connection conn = dbConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            int meetingId;
+            try (PreparedStatement pstmt = conn.prepareStatement(insertMeetingQuery, Statement.RETURN_GENERATED_KEYS)) {
+                pstmt.setString(1, title);
+                pstmt.setString(2, description);
+                pstmt.setDate(3, new java.sql.Date(tanggal.getTime()));
+                pstmt.setTime(4, Time.valueOf(waktuMulai + ":00"));
+                pstmt.setTime(5, Time.valueOf(waktuSelesai + ":00"));
+                pstmt.setString(6, lokasi);
+                pstmt.setString(7, organizerId);
+                pstmt.executeUpdate();
+
+                ResultSet rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    meetingId = rs.getInt(1);
+                } else {
+                    throw new SQLException("Failed to get meeting ID");
+                }
+            }
+
+            if (participantIds != null && !participantIds.isEmpty()) {
+                try (PreparedStatement pstmt = conn.prepareStatement(insertParticipantQuery)) {
+                    for (String participantId : participantIds) {
+                        pstmt.setInt(1, meetingId);
+                        pstmt.setString(2, participantId);
+                        pstmt.addBatch();
+                    }
+                    pstmt.executeBatch();
+                }
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            logger.severe("Error saving meeting: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<LeaveRequest> getAllLeaveRequests() {
+        List<LeaveRequest> leaveRequests = new ArrayList<>();
+        String query = "SELECT * FROM leave_requests ORDER BY request_date DESC";
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                leaveRequests.add(mapResultSetToLeaveRequest(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting all leave requests: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve leave requests", e);
+        }
+        return leaveRequests;
+    }
+
+    @Override
+    public List<LeaveRequest> getLeaveRequestsByEmployee(String employeeId) {
+        List<LeaveRequest> leaveRequests = new ArrayList<>();
+        String query = "SELECT * FROM leave_requests WHERE employee_id = ? ORDER BY request_date DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                leaveRequests.add(mapResultSetToLeaveRequest(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting leave requests by employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve leave requests", e);
+        }
+        return leaveRequests;
+    }
+
+    @Override
+    public List<LeaveRequest> getPendingLeaveRequests() {
+        List<LeaveRequest> leaveRequests = new ArrayList<>();
+        String query = "SELECT * FROM leave_requests WHERE status = 'pending' ORDER BY request_date ASC";
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                leaveRequests.add(mapResultSetToLeaveRequest(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting pending leave requests: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve pending leave requests", e);
+        }
+        return leaveRequests;
+    }
+
+    @Override
+    public List<LeaveRequest> getLeaveRequestsForApproval(String approverId) {
+        Employee approver = getEmployeeById(approverId);
+        if (approver == null) return new ArrayList<>();
+
+        String query;
+        if (approver.getRole().equals("supervisor")) {
+            // Supervisors approve employees in their division
+            query = """
+                SELECT lr.* FROM leave_requests lr
+                JOIN employees e ON lr.employee_id = e.id
+                WHERE lr.status = 'pending' AND e.role = 'pegawai' AND e.divisi = ?
+                ORDER BY lr.request_date ASC
+                """;
+        } else if (approver.getRole().equals("manajer")) {
+            // Managers approve supervisors and any employee
+            query = """
+                SELECT lr.* FROM leave_requests lr
+                JOIN employees e ON lr.employee_id = e.id
+                WHERE lr.status = 'pending' AND (e.role = 'supervisor' OR e.role = 'pegawai')
+                ORDER BY lr.request_date ASC
+                """;
+        } else {
+            return new ArrayList<>();
+        }
+
+        List<LeaveRequest> leaveRequests = new ArrayList<>();
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            if (approver.getRole().equals("supervisor")) {
+                pstmt.setString(1, approver.getDivisi());
+            }
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                leaveRequests.add(mapResultSetToLeaveRequest(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting leave requests for approval: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve leave requests for approval", e);
+        }
+        return leaveRequests;
+    }
+
+    @Override
+    public boolean saveLeaveRequest(String employeeId, String leaveType, Date startDate, Date endDate, String reason) {
+        LocalDate start = startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = endDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        int totalDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
+
+        String query = "INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, total_days, reason, status, request_date) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setString(2, leaveType);
+            pstmt.setDate(3, new java.sql.Date(startDate.getTime()));
+            pstmt.setDate(4, new java.sql.Date(endDate.getTime()));
+            pstmt.setInt(5, totalDays);
+            pstmt.setString(6, reason);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error saving leave request: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean approveLeaveRequest(int leaveRequestId, String approverId, String notes) {
+        String query = "UPDATE leave_requests SET status = 'approved', approver_id = ?, approver_notes = ?, approval_date = NOW() WHERE id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, approverId);
+            pstmt.setString(2, notes);
+            pstmt.setInt(3, leaveRequestId);
+
+            int result = pstmt.executeUpdate();
+            if (result > 0) {
+                // Deduct leave days from employee
+                LeaveRequest request = getLeaveRequestById(leaveRequestId);
+                if (request != null) {
+                    Employee employee = getEmployeeById(request.getEmployeeId());
+                    if (employee != null) {
+                        employee.setSisaCuti(employee.getSisaCuti() - request.getTotalDays());
+                        updateEmployee(employee);
+                    }
+                }
+            }
+            return result > 0;
+        } catch (SQLException e) {
+            logger.severe("Error approving leave request: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean rejectLeaveRequest(int leaveRequestId, String approverId, String notes) {
+        String query = "UPDATE leave_requests SET status = 'rejected', approver_id = ?, approver_notes = ?, approval_date = NOW() WHERE id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, approverId);
+            pstmt.setString(2, notes);
+            pstmt.setInt(3, leaveRequestId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            logger.severe("Error rejecting leave request: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<LeaveRequest> getPendingLeaveRequestsByEmployee(String employeeId) {
+        List<LeaveRequest> leaveRequests = new ArrayList<>();
+        String query = "SELECT * FROM leave_requests WHERE employee_id = ? AND status = 'pending' ORDER BY request_date DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                leaveRequests.add(mapResultSetToLeaveRequest(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting pending leave requests by employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve pending leave requests", e);
+        }
+        return leaveRequests;
+    }
+
+    private LeaveRequest getLeaveRequestById(int id) {
+        String query = "SELECT * FROM leave_requests WHERE id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToLeaveRequest(rs);
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting leave request by ID: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public List<SalaryHistory> getAllSalaryHistory() {
+        List<SalaryHistory> salaryHistories = new ArrayList<>();
+        String query = "SELECT * FROM salary_history ORDER BY tahun DESC, bulan DESC";
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                salaryHistories.add(mapResultSetToSalaryHistory(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting all salary history: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve salary history", e);
+        }
+        return salaryHistories;
+    }
+
+    @Override
+    public List<SalaryHistory> getSalaryHistoryByEmployee(String employeeId) {
+        List<SalaryHistory> salaryHistories = new ArrayList<>();
+        String query = "SELECT * FROM salary_history WHERE employee_id = ? ORDER BY tahun DESC, bulan DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                salaryHistories.add(mapResultSetToSalaryHistory(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting salary history by employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve salary history", e);
+        }
+        return salaryHistories;
+    }
+
+    @Override
+    public List<EmployeeEvaluation> getAllEvaluations() {
+        List<EmployeeEvaluation> evaluations = new ArrayList<>();
+        String query = "SELECT * FROM employee_evaluations ORDER BY evaluation_date DESC";
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                evaluations.add(mapResultSetToEmployeeEvaluation(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting all evaluations: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve evaluations", e);
+        }
+        return evaluations;
+    }
+
+    @Override
+    public boolean saveEmployeeEvaluation(String employeeId, String supervisorId, double punctualityScore,
+                                          double attendanceScore, double overallRating, String comments) {
+        String query = "INSERT INTO employee_evaluations (employee_id, supervisor_id, punctuality_score, attendance_score, overall_rating, comments, evaluation_date) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setString(2, supervisorId);
+            pstmt.setDouble(3, punctualityScore);
+            pstmt.setDouble(4, attendanceScore);
+            pstmt.setDouble(5, overallRating);
+            pstmt.setString(6, comments);
+
+            int result = pstmt.executeUpdate();
+            if (result > 0) {
+                // Update employee supervisor rating
+                Employee employee = getEmployeeById(employeeId);
+                if (employee != null) {
+                    employee.setSupervisorRating(overallRating);
+                    employee.setLayoffRisk(employee.getKpiScore() < 60 || overallRating < 60);
+                    updateEmployee(employee);
+                }
+            }
+            return result > 0;
+        } catch (SQLException e) {
+            logger.severe("Error saving employee evaluation: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean saveMonthlyEmployeeEvaluation(String employeeId, String supervisorId, int month, int year,
+                                                 double punctualityScore, double attendanceScore, double productivityScore,
+                                                 double overallRating, String comments) {
+        String query = "INSERT INTO monthly_evaluations (employee_id, supervisor_id, month, year, punctuality_score, attendance_score, productivity_score, overall_rating, comments, evaluation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE punctuality_score = VALUES(punctuality_score), attendance_score = VALUES(attendance_score), productivity_score = VALUES(productivity_score), overall_rating = VALUES(overall_rating), comments = VALUES(comments), evaluation_date = VALUES(evaluation_date)";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setString(2, supervisorId);
+            pstmt.setInt(3, month);
+            pstmt.setInt(4, year);
+            pstmt.setDouble(5, punctualityScore);
+            pstmt.setDouble(6, attendanceScore);
+            pstmt.setDouble(7, productivityScore);
+            pstmt.setDouble(8, overallRating);
+            pstmt.setString(9, comments);
+
+            int result = pstmt.executeUpdate();
+            if (result > 0) {
+                // Update employee supervisor rating with latest monthly evaluation
+                Employee employee = getEmployeeById(employeeId);
+                if (employee != null) {
+                    employee.setSupervisorRating(overallRating);
+                    employee.setOverallRating(overallRating);
+                    employee.setLayoffRisk(employee.getKpiScore() < 60 || overallRating < 60);
+                    updateEmployee(employee);
+                }
+            }
+            return result > 0;
+        } catch (SQLException e) {
+            logger.severe("Error saving monthly employee evaluation: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean hasMonthlyEvaluation(String employeeId, int month, int year) {
+        String query = "SELECT COUNT(*) FROM monthly_evaluations WHERE employee_id = ? AND month = ? AND year = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employeeId);
+            pstmt.setInt(2, month);
+            pstmt.setInt(3, year);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            logger.severe("Error checking monthly evaluation: " + e.getMessage());
+        }
+        return false;
+    }
+
+    @Override
+    public List<MonthlyEvaluation> getAllMonthlyEvaluations() {
+        List<MonthlyEvaluation> evaluations = new ArrayList<>();
+        String query = "SELECT * FROM monthly_evaluations ORDER BY year DESC, month DESC";
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                evaluations.add(mapResultSetToMonthlyEvaluation(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting all monthly evaluations: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve monthly evaluations", e);
+        }
+        return evaluations;
+    }
+
+    @Override
+    public List<MonthlyEvaluation> getMonthlyEvaluationsBySupervisor(String supervisorId) {
+        List<MonthlyEvaluation> evaluations = new ArrayList<>();
+        String query = "SELECT * FROM monthly_evaluations WHERE supervisor_id = ? ORDER BY year DESC, month DESC";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, supervisorId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                evaluations.add(mapResultSetToMonthlyEvaluation(rs));
+            }
+        } catch (SQLException e) {
+            logger.severe("Error getting monthly evaluations by supervisor: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to retrieve monthly evaluations", e);
+        }
+        return evaluations;
+    }
+
+    @Override
+    public Map<String, Object> getDashboardStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        try (Connection conn = dbConnection.getConnection()) {
+            // Total employees
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM employees");
+                if (rs.next()) {
+                    stats.put("totalEmployees", rs.getInt("total"));
+                }
+            }
+
+            // Employees by role
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT role, COUNT(*) as count FROM employees GROUP BY role");
+                while (rs.next()) {
+                    stats.put("total" + rs.getString("role").substring(0, 1).toUpperCase() + rs.getString("role").substring(1), rs.getInt("count"));
+                }
+            }
+
+            // Layoff risk employees
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM employees WHERE layoff_risk = true");
+                if (rs.next()) {
+                    stats.put("layoffRiskEmployees", rs.getInt("count"));
+                }
+            }
+
+            // Pending reports
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM reports WHERE status = 'pending'");
+                if (rs.next()) {
+                    stats.put("pendingReports", rs.getInt("count"));
+                }
+            }
+
+            // Pending leave requests
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM leave_requests WHERE status = 'pending'");
+                if (rs.next()) {
+                    stats.put("pendingLeaveRequests", rs.getInt("count"));
+                }
+            }
+
+            // Upcoming meetings
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM meetings WHERE tanggal >= CURDATE() AND status = 'scheduled'");
+                if (rs.next()) {
+                    stats.put("upcomingMeetings", rs.getInt("count"));
+                }
+            }
+
+        } catch (SQLException e) {
+            logger.severe("Error getting dashboard stats: " + e.getMessage());
+        }
+
+        return stats;
+    }
+
+    @Override
+    public void close() {
+        if (dbManager != null) {
+            try {
+                dbManager.close();
+            } catch (Exception e) {
+                logger.warning("Error closing database manager: " + e.getMessage());
+            }
+        }
+        logger.info("MySQLDataStore closed");
+    }
+
+    // Mapping methods
     private Employee mapResultSetToEmployee(ResultSet rs) throws SQLException {
         Employee emp = new Employee();
         emp.setId(rs.getString("id"));
@@ -319,49 +960,126 @@ public class MySQLDataStore implements IDataStore {
         return report;
     }
 
-    // Implement all other interface methods with proper error handling...
-    // For space constraints, showing the pattern
+    private Attendance mapResultSetToAttendance(ResultSet rs) throws SQLException {
+        Attendance attendance = new Attendance();
+        attendance.setId(rs.getInt("id"));
+        attendance.setEmployeeId(rs.getString("employee_id"));
+        attendance.setTanggal(rs.getDate("tanggal"));
 
-    @Override
-    public void close() {
-        if (dbManager != null) {
-            try {
-                dbManager.close();
-            } catch (Exception e) {
-                logger.warning("Error closing database manager: " + e.getMessage());
-            }
-        }
-        logger.info("MySQLDataStore closed");
+        Time jamMasuk = rs.getTime("jam_masuk");
+        attendance.setJamMasuk(jamMasuk != null ? jamMasuk.toString().substring(0, 5) : null);
+
+        Time jamKeluar = rs.getTime("jam_keluar");
+        attendance.setJamKeluar(jamKeluar != null ? jamKeluar.toString().substring(0, 5) : null);
+
+        attendance.setStatus(rs.getString("status"));
+        attendance.setKeterangan(rs.getString("keterangan"));
+        attendance.setLate(rs.getBoolean("is_late"));
+        return attendance;
     }
 
-    // Add all other required interface methods here...
-    // (The full implementation would include all methods from IDataStore interface)
+    private Meeting mapResultSetToMeeting(ResultSet rs) throws SQLException {
+        Meeting meeting = new Meeting();
+        meeting.setId(rs.getInt("id"));
+        meeting.setTitle(rs.getString("title"));
+        meeting.setDescription(rs.getString("description"));
+        meeting.setTanggal(rs.getDate("tanggal"));
 
-    // Placeholder implementations for remaining interface methods
-    @Override public List<Report> getReportsByDivision(String divisi) { return new ArrayList<>(); }
-    @Override public boolean saveReport(String supervisorId, String divisi, int bulan, int tahun, String filePath) { return false; }
-    @Override public boolean updateReportStatus(int reportId, String status, String managerNotes, String reviewedBy) { return false; }
-    @Override public List<Attendance> getAttendanceByEmployee(String employeeId) { return new ArrayList<>(); }
-    @Override public List<Attendance> getTodayAttendance(String employeeId) { return new ArrayList<>(); }
-    @Override public boolean saveAttendance(String employeeId, Date tanggal, String jamMasuk, String jamKeluar, String status) { return false; }
-    @Override public boolean updateAttendanceClockOut(String employeeId, String jamKeluar) { return false; }
-    @Override public List<Meeting> getMeetingsByEmployee(String employeeId) { return new ArrayList<>(); }
-    @Override public boolean saveMeeting(String title, String description, Date tanggal, String waktuMulai, String waktuSelesai, String lokasi, String organizerId, List<String> participantIds) { return false; }
-    @Override public List<LeaveRequest> getAllLeaveRequests() { return new ArrayList<>(); }
-    @Override public List<LeaveRequest> getLeaveRequestsByEmployee(String employeeId) { return new ArrayList<>(); }
-    @Override public List<LeaveRequest> getPendingLeaveRequests() { return new ArrayList<>(); }
-    @Override public List<LeaveRequest> getLeaveRequestsForApproval(String approverId) { return new ArrayList<>(); }
-    @Override public boolean saveLeaveRequest(String employeeId, String leaveType, Date startDate, Date endDate, String reason) { return false; }
-    @Override public boolean approveLeaveRequest(int leaveRequestId, String approverId, String notes) { return false; }
-    @Override public boolean rejectLeaveRequest(int leaveRequestId, String approverId, String notes) { return false; }
-    @Override public List<LeaveRequest> getPendingLeaveRequestsByEmployee(String employeeId) { return new ArrayList<>(); }
-    @Override public List<SalaryHistory> getAllSalaryHistory() { return new ArrayList<>(); }
-    @Override public List<SalaryHistory> getSalaryHistoryByEmployee(String employeeId) { return new ArrayList<>(); }
-    @Override public List<EmployeeEvaluation> getAllEvaluations() { return new ArrayList<>(); }
-    @Override public boolean saveEmployeeEvaluation(String employeeId, String supervisorId, double punctualityScore, double attendanceScore, double overallRating, String comments) { return false; }
-    @Override public boolean saveMonthlyEmployeeEvaluation(String employeeId, String supervisorId, int month, int year, double punctualityScore, double attendanceScore, double productivityScore, double overallRating, String comments) { return false; }
-    @Override public boolean hasMonthlyEvaluation(String employeeId, int month, int year) { return false; }
-    @Override public List<MonthlyEvaluation> getAllMonthlyEvaluations() { return new ArrayList<>(); }
-    @Override public List<MonthlyEvaluation> getMonthlyEvaluationsBySupervisor(String supervisorId) { return new ArrayList<>(); }
-    @Override public Map<String, Object> getDashboardStats() { return new HashMap<>(); }
+        Time waktuMulai = rs.getTime("waktu_mulai");
+        meeting.setWaktuMulai(waktuMulai != null ? waktuMulai.toString().substring(0, 5) : null);
+
+        Time waktuSelesai = rs.getTime("waktu_selesai");
+        meeting.setWaktuSelesai(waktuSelesai != null ? waktuSelesai.toString().substring(0, 5) : null);
+
+        meeting.setLokasi(rs.getString("lokasi"));
+        meeting.setOrganizerId(rs.getString("organizer_id"));
+        meeting.setStatus(rs.getString("status"));
+        meeting.setCreatedDate(rs.getTimestamp("created_date"));
+
+        // Load participants
+        List<String> participants = getMeetingParticipants(meeting.getId());
+        meeting.setParticipantIds(participants);
+
+        return meeting;
+    }
+
+    private List<String> getMeetingParticipants(int meetingId) {
+        List<String> participants = new ArrayList<>();
+        String query = "SELECT participant_id FROM meeting_participants WHERE meeting_id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, meetingId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                participants.add(rs.getString("participant_id"));
+            }
+        } catch (SQLException e) {
+            logger.warning("Error getting meeting participants: " + e.getMessage());
+        }
+        return participants;
+    }
+
+    private LeaveRequest mapResultSetToLeaveRequest(ResultSet rs) throws SQLException {
+        LeaveRequest request = new LeaveRequest();
+        request.setId(rs.getInt("id"));
+        request.setEmployeeId(rs.getString("employee_id"));
+        request.setLeaveType(rs.getString("leave_type"));
+        request.setStartDate(rs.getDate("start_date"));
+        request.setEndDate(rs.getDate("end_date"));
+        request.setTotalDays(rs.getInt("total_days"));
+        request.setReason(rs.getString("reason"));
+        request.setStatus(rs.getString("status"));
+        request.setApproverId(rs.getString("approver_id"));
+        request.setApproverNotes(rs.getString("approver_notes"));
+        request.setRequestDate(rs.getTimestamp("request_date"));
+        request.setApprovalDate(rs.getTimestamp("approval_date"));
+        return request;
+    }
+
+    private SalaryHistory mapResultSetToSalaryHistory(ResultSet rs) throws SQLException {
+        SalaryHistory salary = new SalaryHistory();
+        salary.setId(rs.getInt("id"));
+        salary.setEmployeeId(rs.getString("employee_id"));
+        salary.setBulan(rs.getInt("bulan"));
+        salary.setTahun(rs.getInt("tahun"));
+        salary.setBaseSalary(rs.getDouble("base_salary"));
+        salary.setKpiBonus(rs.getDouble("kpi_bonus"));
+        salary.setSupervisorBonus(rs.getDouble("supervisor_bonus"));
+        salary.setPenalty(rs.getDouble("penalty"));
+        salary.setTotalSalary(rs.getDouble("total_salary"));
+        salary.setKpiScore(rs.getDouble("kpi_score"));
+        salary.setSupervisorRating(rs.getDouble("supervisor_rating"));
+        salary.setPaymentDate(rs.getTimestamp("payment_date"));
+        salary.setNotes(rs.getString("notes"));
+        return salary;
+    }
+
+    private EmployeeEvaluation mapResultSetToEmployeeEvaluation(ResultSet rs) throws SQLException {
+        EmployeeEvaluation evaluation = new EmployeeEvaluation();
+        evaluation.setId(rs.getInt("id"));
+        evaluation.setEmployeeId(rs.getString("employee_id"));
+        evaluation.setSupervisorId(rs.getString("supervisor_id"));
+        evaluation.setPunctualityScore(rs.getDouble("punctuality_score"));
+        evaluation.setAttendanceScore(rs.getDouble("attendance_score"));
+        evaluation.setOverallRating(rs.getDouble("overall_rating"));
+        evaluation.setComments(rs.getString("comments"));
+        evaluation.setEvaluationDate(rs.getTimestamp("evaluation_date"));
+        return evaluation;
+    }
+
+    private MonthlyEvaluation mapResultSetToMonthlyEvaluation(ResultSet rs) throws SQLException {
+        MonthlyEvaluation evaluation = new MonthlyEvaluation();
+        evaluation.setId(rs.getInt("id"));
+        evaluation.setEmployeeId(rs.getString("employee_id"));
+        evaluation.setSupervisorId(rs.getString("supervisor_id"));
+        evaluation.setMonth(rs.getInt("month"));
+        evaluation.setYear(rs.getInt("year"));
+        evaluation.setPunctualityScore(rs.getDouble("punctuality_score"));
+        evaluation.setAttendanceScore(rs.getDouble("attendance_score"));
+        evaluation.setProductivityScore(rs.getDouble("productivity_score"));
+        evaluation.setOverallRating(rs.getDouble("overall_rating"));
+        evaluation.setComments(rs.getString("comments"));
+        evaluation.setEvaluationDate(rs.getTimestamp("evaluation_date"));
+        return evaluation;
+    }
 }
