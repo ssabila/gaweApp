@@ -533,26 +533,34 @@ public class MySQLDataStore implements IDataStore {
     @Override
     public List<LeaveRequest> getLeaveRequestsForApproval(String approverId) {
         Employee approver = getEmployeeById(approverId);
-        if (approver == null) return new ArrayList<>();
+        if (approver == null) {
+            logger.warning("Approver not found: " + approverId);
+            return new ArrayList<>();
+        }
+
+        System.out.println("Getting leave requests for approval by: " + approver.getNama() + " (" + approver.getRole() + ")");
 
         String query;
         if (approver.getRole().equals("supervisor")) {
             // Supervisors approve employees in their division
             query = """
-                SELECT lr.* FROM leave_requests lr
-                JOIN employees e ON lr.employee_id = e.id
-                WHERE lr.status = 'pending' AND e.role = 'pegawai' AND e.divisi = ?
-                ORDER BY lr.request_date ASC
-                """;
+            SELECT lr.* FROM leave_requests lr
+            JOIN employees e ON lr.employee_id = e.id
+            WHERE lr.status = 'pending' AND e.role = 'pegawai' AND e.divisi = ?
+            ORDER BY lr.request_date ASC
+            """;
+            System.out.println("Supervisor approving employees in division: " + approver.getDivisi());
         } else if (approver.getRole().equals("manajer")) {
             // Managers approve supervisors and any employee
             query = """
-                SELECT lr.* FROM leave_requests lr
-                JOIN employees e ON lr.employee_id = e.id
-                WHERE lr.status = 'pending' AND (e.role = 'supervisor' OR e.role = 'pegawai')
-                ORDER BY lr.request_date ASC
-                """;
+            SELECT lr.* FROM leave_requests lr
+            JOIN employees e ON lr.employee_id = e.id
+            WHERE lr.status = 'pending' AND (e.role = 'supervisor' OR e.role = 'pegawai')
+            ORDER BY lr.request_date ASC
+            """;
+            System.out.println("Manager approving all supervisor and employee requests");
         } else {
+            System.out.println("Role not authorized for approvals: " + approver.getRole());
             return new ArrayList<>();
         }
 
@@ -566,6 +574,7 @@ public class MySQLDataStore implements IDataStore {
             while (rs.next()) {
                 leaveRequests.add(mapResultSetToLeaveRequest(rs));
             }
+            System.out.println("Found " + leaveRequests.size() + " pending requests for approval");
         } catch (SQLException e) {
             logger.severe("Error getting leave requests for approval: " + e.getMessage());
             throw new DatabaseException.QueryException("Failed to retrieve leave requests for approval", e);
@@ -575,8 +584,9 @@ public class MySQLDataStore implements IDataStore {
 
     @Override
     public boolean saveLeaveRequest(String employeeId, String leaveType, Date startDate, Date endDate, String reason) {
-        LocalDate start = startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate end = endDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        // FIX: Use safer date conversion method
+        LocalDate start = convertToLocalDate(startDate);
+        LocalDate end = convertToLocalDate(endDate);
         int totalDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
 
         String query = "INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, total_days, reason, status, request_date) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())";
@@ -592,6 +602,17 @@ public class MySQLDataStore implements IDataStore {
         } catch (SQLException e) {
             logger.severe("Error saving leave request: " + e.getMessage());
             return false;
+        }
+    }
+
+    // Add this helper method to MySQLDataStore.java
+    private LocalDate convertToLocalDate(Date date) {
+        if (date instanceof java.sql.Date) {
+            // For java.sql.Date, use toLocalDate() directly
+            return ((java.sql.Date) date).toLocalDate();
+        } else {
+            // For java.util.Date, use different approach
+            return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         }
     }
 

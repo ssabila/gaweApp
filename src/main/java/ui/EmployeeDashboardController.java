@@ -22,6 +22,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
+import java.time.ZoneId;
+import java.util.*;
+
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -583,16 +586,23 @@ public class EmployeeDashboardController {
                         return;
                     }
 
-                    Date startSqlDate = java.sql.Date.valueOf(startDate);
-                    Date endSqlDate = java.sql.Date.valueOf(endDate);
+                    // FIX: Use java.util.Date instead of java.sql.Date
+                    Date startUtilDate = java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                    Date endUtilDate = java.util.Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-                    boolean success = dataStore.saveLeaveRequest(employee.getId(), leaveTypeCombo.getValue(),
-                            startSqlDate, endSqlDate, reasonArea.getText());
-                    if (success) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
-                        showMyLeaveRequests(); // Refresh
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
+                    try {
+                        boolean success = dataStore.saveLeaveRequest(employee.getId(), leaveTypeCombo.getValue(),
+                                startUtilDate, endUtilDate, reasonArea.getText());
+                        if (success) {
+                            showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
+                            showMyLeaveRequests(); // Refresh
+                        } else {
+                            showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
+                        }
+                    } catch (Exception e) {
+                        logger.severe("Error submitting leave request: " + e.getMessage());
+                        e.printStackTrace();
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request: " + e.getMessage());
                     }
                 } else {
                     showAlert(Alert.AlertType.WARNING, "Invalid Input", "Please select start and end dates.");
