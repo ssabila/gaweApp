@@ -29,6 +29,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -874,11 +875,14 @@ public class SupervisorDashboardController {
         Label title = new Label("Team Management - " + supervisor.getDivisi() + " Division");
         title.getStyleClass().add("content-title");
 
+        Button addEmployeeBtn = new Button("Add Employee");
+        addEmployeeBtn.setOnAction(e -> showAddEmployeeDialog());
+
         if (teamTable == null) {
             teamTable = createTeamTable();
         }
 
-        content.getChildren().addAll(title, teamTable);
+        content.getChildren().addAll(title, addEmployeeBtn, teamTable);
         contentArea.getChildren().add(content);
     }
 
@@ -1806,6 +1810,84 @@ public class SupervisorDashboardController {
                 } catch (Exception e) {
                     showAlert(Alert.AlertType.ERROR, "Error", "Failed to update profile.");
                 }
+            }
+        });
+    }
+
+    private void showAddEmployeeDialog() {
+        Dialog<Employee> dialog = new Dialog<>();
+        dialog.setTitle("Add New Employee");
+        dialog.setHeaderText("Enter new employee details for the " + supervisor.getDivisi() + " division.");
+
+        ButtonType addButton = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButton, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField nameField = new TextField();
+        nameField.setPromptText("Name");
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+        TextField positionField = new TextField();
+        positionField.setPromptText("Position");
+        TextField salaryField = new TextField();
+        salaryField.setPromptText("Base Salary");
+
+        grid.add(new Label("Name:"), 0, 0);
+        grid.add(nameField, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(passwordField, 1, 1);
+        grid.add(new Label("Position:"), 0, 2);
+        grid.add(positionField, 1, 2);
+        grid.add(new Label("Base Salary:"), 0, 3);
+        grid.add(salaryField, 1, 3);
+
+        dialog.getDialogPane().setContent(grid);
+
+        Platform.runLater(nameField::requestFocus);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == addButton) {
+                if (nameField.getText().isEmpty() || passwordField.getText().isEmpty() || positionField.getText().isEmpty() || salaryField.getText().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "Invalid Input", "Please fill in all fields.");
+                    return null;
+                }
+                try {
+                    Employee newEmployee = new Employee();
+                    newEmployee.setNama(nameField.getText());
+                    newEmployee.setPassword(passwordField.getText());
+                    newEmployee.setJabatan(positionField.getText());
+                    newEmployee.setGajiPokok(Double.parseDouble(salaryField.getText()));
+                    newEmployee.setDivisi(supervisor.getDivisi());
+                    newEmployee.setRole("pegawai");
+                    newEmployee.setTglMasuk(new Date());
+                    newEmployee.setSisaCuti(12);
+                    newEmployee.setKpiScore(75.0); // Default KPI Score
+                    newEmployee.setSupervisorRating(75.0); // Default Supervisor Rating
+                    newEmployee.setAttendanceScore(100.0); // Default Attendance Score
+                    newEmployee.setOverallRating(75.0); // Default Overall Rating
+                    newEmployee.setLayoffRisk(false);
+                    return newEmployee;
+                } catch (NumberFormatException e) {
+                    showAlert(Alert.AlertType.ERROR, "Invalid Input", "Please enter a valid number for salary.");
+                    return null;
+                }
+            }
+            return null;
+        });
+
+        Optional<Employee> result = dialog.showAndWait();
+
+        result.ifPresent(newEmployee -> {
+            try {
+                dataStore.addEmployee(newEmployee);
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Employee added successfully!");
+                refreshTeamTable(teamTable);
+            } catch (Exception e) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to add employee: " + e.getMessage());
             }
         });
     }

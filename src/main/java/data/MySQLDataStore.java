@@ -185,6 +185,65 @@ public class MySQLDataStore implements IDataStore {
     }
 
     @Override
+    public void addEmployee(Employee employee) throws SQLException {
+        String generatedId = generateNextEmployeeId(employee.getRole());
+        employee.setId(generatedId);
+
+        String query = "INSERT INTO employees (id, nama, password, role, divisi, jabatan, tgl_masuk, sisa_cuti, gaji_pokok, kpi_score, supervisor_rating, layoff_risk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, employee.getId());
+            pstmt.setString(2, employee.getNama());
+            pstmt.setString(3, employee.getPassword());
+            pstmt.setString(4, employee.getRole());
+            pstmt.setString(5, employee.getDivisi());
+            pstmt.setString(6, employee.getJabatan());
+            pstmt.setDate(7, new java.sql.Date(employee.getTglMasuk().getTime()));
+            pstmt.setInt(8, employee.getSisaCuti());
+            pstmt.setDouble(9, employee.getGajiPokok());
+            pstmt.setDouble(10, employee.getKpiScore());
+            pstmt.setDouble(11, employee.getSupervisorRating());
+            pstmt.setBoolean(12, employee.isLayoffRisk());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            logger.severe("Error adding employee: " + e.getMessage());
+            throw new DatabaseException.QueryException("Failed to add employee", e);
+        }
+    }
+
+    private String generateNextEmployeeId(String role) throws SQLException {
+        String prefix;
+        switch (role.toLowerCase()) {
+            case "pegawai":
+                prefix = "EMP";
+                break;
+            case "supervisor":
+                prefix = "SUP";
+                break;
+            case "manajer":
+                prefix = "MNG";
+                break;
+            default:
+                prefix = "EMP"; // Default to employee
+                break;
+        }
+
+        String query = "SELECT id FROM employees WHERE id LIKE ? ORDER BY id DESC LIMIT 1";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, prefix + "%");
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String lastId = rs.getString("id");
+                int lastNumber = Integer.parseInt(lastId.substring(prefix.length()));
+                return prefix + String.format("%03d", lastNumber + 1);
+            } else {
+                return prefix + "001";
+            }
+        }
+    }
+
+    @Override
     public List<KPI> getAllKPI() {
         List<KPI> kpiList = new ArrayList<>();
         String query = "SELECT * FROM kpi ORDER BY tahun DESC, bulan DESC";

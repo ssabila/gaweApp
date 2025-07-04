@@ -2,6 +2,8 @@ package data;
 
 import models.*;
 import data.MySQLDataStore.MonthlyEvaluation;
+
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
@@ -19,6 +21,7 @@ public interface IDataStore {
     List<Employee> getEmployeesByDivision(String divisi);
     Employee getEmployeeById(String id);
     void updateEmployee(Employee employee);
+    void addEmployee(Employee employee) throws SQLException;
 
     // KPI operations
     List<KPI> getAllKPI();
