@@ -36,6 +36,7 @@ data\MySQLDataStore$MonthlyEvaluation.class
 app\HelloApplication.class
 app\TestDashboardFiles.class
 models\ServerRequest.class
+ui\ManagerDashboardController$4.class
 ui\SupervisorDashboardController$3.class
 models\SalaryHistory.class
 models\LeaveRequest.class

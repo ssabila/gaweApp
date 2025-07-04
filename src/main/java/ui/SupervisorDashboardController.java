@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -46,6 +47,12 @@ public class SupervisorDashboardController {
     private MySQLDataStore dataStore;
     private Stage stage;
 
+    // TableView instances for refreshing
+    private TableView<LeaveRequest> leaveApprovalsTable;
+    private TableView<Employee> teamTable;
+    private TableView<Report> reportHistoryTable;
+    private TableView<MySQLDataStore.MonthlyEvaluation> evaluationsHistoryTable;
+
     private DecimalFormat df = new DecimalFormat("#.##");
     private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
@@ -56,8 +63,6 @@ public class SupervisorDashboardController {
         if (userWelcomeLabel != null) {
             userWelcomeLabel.setText("Welcome, " + supervisor.getNama() + " (" + supervisor.getDivisi() + ")");
         }
-
-        // Initialize content after supervisor is set
         initializeContent();
     }
 
@@ -70,29 +75,19 @@ public class SupervisorDashboardController {
         if (supervisor != null) {
             this.stage.setTitle("GAWE - Supervisor Dashboard - " + supervisor.getNama());
         }
-        this.stage.setOnCloseRequest(e -> {
-            stopApplication();
-        });
+        this.stage.setOnCloseRequest(e -> stopApplication());
     }
 
     @FXML
     public void initialize() {
-        // Only do basic FXML initialization here
-        // Don't call methods that need supervisor or dataStore
         populateNavigationButtons();
-
-        // Content will be initialized when supervisor and dataStore are set
     }
 
     private void initializeContent() {
-        // Only initialize content if both supervisor and dataStore are available
         if (supervisor != null && dataStore != null) {
-            // Update welcome label if it wasn't set before
             if (userWelcomeLabel != null) {
                 userWelcomeLabel.setText("Welcome, " + supervisor.getNama() + " (" + supervisor.getDivisi() + ")");
             }
-
-            // Show default dashboard content
             showDashboardContent();
         }
     }
@@ -121,7 +116,7 @@ public class SupervisorDashboardController {
         Button button = new Button(text);
         button.setPrefWidth(240);
         button.setAlignment(Pos.CENTER_LEFT);
-        button.getStyleClass().add("nav-button"); // Apply CSS class
+        button.getStyleClass().add("nav-button");
         button.setOnAction(e -> action.run());
         return button;
     }
@@ -147,7 +142,6 @@ public class SupervisorDashboardController {
     }
 
     private void showDashboardContent() {
-        // Check if required objects are available
         if (supervisor == null || dataStore == null || contentArea == null) {
             logger.warning("Cannot show dashboard content - missing required objects");
             return;
@@ -235,7 +229,7 @@ public class SupervisorDashboardController {
         boolean success = dataStore.saveAttendance(supervisor.getId(), new Date(), timeStr, null, "hadir");
         if (success) {
             showAlert(Alert.AlertType.INFORMATION, "Clock In", "Successfully clocked in at " + timeStr);
-            showDashboardContent(); // Refresh dashboard
+            showDashboardContent();
         } else {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to clock in.");
         }
@@ -253,7 +247,7 @@ public class SupervisorDashboardController {
         boolean success = dataStore.updateAttendanceClockOut(supervisor.getId(), timeStr);
         if (success) {
             showAlert(Alert.AlertType.INFORMATION, "Clock Out", "Successfully clocked out at " + timeStr);
-            showDashboardContent(); // Refresh dashboard
+            showDashboardContent();
         } else {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to clock out.");
         }
@@ -268,29 +262,34 @@ public class SupervisorDashboardController {
             return statsContainer;
         }
 
-        List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                .filter(emp -> emp.getRole().equalsIgnoreCase("pegawai"))
-                .toList();
+        try {
+            List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                    .filter(emp -> emp.getRole().equalsIgnoreCase("pegawai"))
+                    .toList();
 
-        VBox teamSizeCard = createStatsCard("Team Size", String.valueOf(teamMembers.size()), "👥", "#3498db");
+            VBox teamSizeCard = createStatsCard("Team Size", String.valueOf(teamMembers.size()), "👥", "#3498db");
 
-        double avgKpi = teamMembers.stream()
-                .mapToDouble(Employee::getKpiScore)
-                .average()
-                .orElse(0.0);
-        VBox avgKpiCard = createStatsCard("Avg KPI", String.format("%.1f%%", avgKpi), "📊", "#2ecc71");
+            double avgKpi = teamMembers.stream()
+                    .mapToDouble(Employee::getKpiScore)
+                    .average()
+                    .orElse(0.0);
+            VBox avgKpiCard = createStatsCard("Avg KPI", String.format("%.1f%%", avgKpi), "📊", "#2ecc71");
 
-        long atRiskCount = teamMembers.stream()
-                .filter(Employee::isLayoffRisk)
-                .count();
-        VBox atRiskCard = createStatsCard("At Risk", String.valueOf(atRiskCount), "⚠️", "#e74c3c");
+            long atRiskCount = teamMembers.stream()
+                    .filter(Employee::isLayoffRisk)
+                    .count();
+            VBox atRiskCard = createStatsCard("At Risk", String.valueOf(atRiskCount), "⚠️", "#e74c3c");
 
-        // Refresh supervisor object to get updated leave balance if any changes occurred
-        Employee refreshedSupervisor = dataStore.authenticateUser(supervisor.getId(), supervisor.getPassword());
-        int supervisorLeaveDays = (refreshedSupervisor != null) ? refreshedSupervisor.getSisaCuti() : supervisor.getSisaCuti();
-        VBox leaveCard = createStatsCard("My Leave Days", String.valueOf(supervisorLeaveDays), "🏖️", "#9b59b6");
+            // Refresh supervisor object to get updated leave balance
+            Employee refreshedSupervisor = dataStore.authenticateUser(supervisor.getId(), supervisor.getPassword());
+            int supervisorLeaveDays = (refreshedSupervisor != null) ? refreshedSupervisor.getSisaCuti() : supervisor.getSisaCuti();
+            VBox leaveCard = createStatsCard("My Leave Days", String.valueOf(supervisorLeaveDays), "🏖️", "#9b59b6");
 
-        statsContainer.getChildren().addAll(teamSizeCard, avgKpiCard, atRiskCard, leaveCard);
+            statsContainer.getChildren().addAll(teamSizeCard, avgKpiCard, atRiskCard, leaveCard);
+        } catch (Exception e) {
+            logger.severe("Error creating stats cards: " + e.getMessage());
+        }
+
         return statsContainer;
     }
 
@@ -330,15 +329,19 @@ public class SupervisorDashboardController {
         activitiesList.getStyleClass().add("activities-list");
 
         if (supervisor != null && dataStore != null) {
-            List<LeaveRequest> pendingApprovals = dataStore.getLeaveRequestsForApproval(supervisor.getId());
-            ObservableList<String> activities = FXCollections.observableArrayList(
-                    "📊 Dashboard accessed - just now",
-                    "📄 Ready to upload monthly report for " + supervisor.getDivisi(),
-                    "⭐ Team evaluations pending",
-                    "✅ " + pendingApprovals.size() + " leave requests pending approval",
-                    "👥 Managing " + supervisor.getDivisi() + " team"
-            );
-            activitiesList.setItems(activities);
+            try {
+                List<LeaveRequest> pendingApprovals = dataStore.getLeaveRequestsForApproval(supervisor.getId());
+                ObservableList<String> activities = FXCollections.observableArrayList(
+                        "📊 Dashboard accessed - just now",
+                        "📄 Ready to upload monthly report for " + supervisor.getDivisi(),
+                        "⭐ Team evaluations pending",
+                        "✅ " + pendingApprovals.size() + " leave requests pending approval",
+                        "👥 Managing " + supervisor.getDivisi() + " team"
+                );
+                activitiesList.setItems(activities);
+            } catch (Exception e) {
+                logger.warning("Error loading recent activities: " + e.getMessage());
+            }
         }
 
         section.getChildren().addAll(sectionTitle, activitiesList);
@@ -386,8 +389,12 @@ public class SupervisorDashboardController {
         table.getColumns().addAll(dateCol, clockInCol, clockOutCol, statusCol);
 
         if (dataStore != null && supervisor != null) {
-            List<Attendance> myAttendance = dataStore.getAttendanceByEmployee(supervisor.getId());
-            table.setItems(FXCollections.observableArrayList(myAttendance));
+            try {
+                List<Attendance> myAttendance = dataStore.getAttendanceByEmployee(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(myAttendance));
+            } catch (Exception e) {
+                logger.severe("Error loading attendance: " + e.getMessage());
+            }
         }
         table.setPrefHeight(400);
 
@@ -440,8 +447,12 @@ public class SupervisorDashboardController {
         table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol);
 
         if (dataStore != null && supervisor != null) {
-            List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(supervisor.getId());
-            table.setItems(FXCollections.observableArrayList(myMeetings));
+            try {
+                List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(myMeetings));
+            } catch (Exception e) {
+                logger.severe("Error loading meetings: " + e.getMessage());
+            }
         }
         table.setPrefHeight(400);
 
@@ -468,9 +479,11 @@ public class SupervisorDashboardController {
 
         TextField startTimeField = new TextField();
         startTimeField.setPromptText("Start time (HH:MM)");
+        startTimeField.setText("09:00");
 
         TextField endTimeField = new TextField();
         endTimeField.setPromptText("End time (HH:MM)");
+        endTimeField.setText("10:00");
 
         TextField locationField = new TextField();
         locationField.setPromptText("Meeting location...");
@@ -490,28 +503,33 @@ public class SupervisorDashboardController {
         dialog.showAndWait().ifPresent(result -> {
             if (result == ButtonType.OK) {
                 if (!titleField.getText().isEmpty() && datePicker.getValue() != null) {
-                    Date meetingDate = java.sql.Date.valueOf(datePicker.getValue());
-                    List<String> participants = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                            .filter(emp -> emp.getRole().equals("pegawai"))
-                            .map(Employee::getId)
-                            .collect(Collectors.toList());
+                    try {
+                        Date meetingDate = java.sql.Date.valueOf(datePicker.getValue());
+                        List<String> participants = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                                .filter(emp -> emp.getRole().equals("pegawai"))
+                                .map(Employee::getId)
+                                .collect(Collectors.toList());
 
-                    boolean success = dataStore.saveMeeting(
-                            titleField.getText(),
-                            descriptionArea.getText(),
-                            meetingDate,
-                            startTimeField.getText(),
-                            endTimeField.getText(),
-                            locationField.getText(),
-                            supervisor.getId(),
-                            participants
-                    );
+                        boolean success = dataStore.saveMeeting(
+                                titleField.getText(),
+                                descriptionArea.getText(),
+                                meetingDate,
+                                startTimeField.getText(),
+                                endTimeField.getText(),
+                                locationField.getText(),
+                                supervisor.getId(),
+                                participants
+                        );
 
-                    if (success) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success", "Meeting scheduled successfully!");
-                        showMyMeetings();
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to schedule meeting.");
+                        if (success) {
+                            showAlert(Alert.AlertType.INFORMATION, "Success", "Meeting scheduled successfully!");
+                            showMyMeetings();
+                        } else {
+                            showAlert(Alert.AlertType.ERROR, "Error", "Failed to schedule meeting.");
+                        }
+                    } catch (Exception e) {
+                        logger.severe("Error scheduling meeting: " + e.getMessage());
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to schedule meeting: " + e.getMessage());
                     }
                 } else {
                     showAlert(Alert.AlertType.WARNING, "Invalid Input", "Please fill in required fields.");
@@ -571,8 +589,12 @@ public class SupervisorDashboardController {
         table.getColumns().addAll(typeCol, startDateCol, endDateCol, daysCol, statusCol, notesCol);
 
         if (dataStore != null && supervisor != null) {
-            List<LeaveRequest> myLeaveRequests = dataStore.getLeaveRequestsByEmployee(supervisor.getId());
-            table.setItems(FXCollections.observableArrayList(myLeaveRequests));
+            try {
+                List<LeaveRequest> myLeaveRequests = dataStore.getLeaveRequestsByEmployee(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(myLeaveRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading leave requests: " + e.getMessage());
+            }
         }
         table.setPrefHeight(400);
 
@@ -652,16 +674,23 @@ public class SupervisorDashboardController {
                         return;
                     }
 
-                    Date startSqlDate = java.sql.Date.valueOf(startDate);
-                    Date endSqlDate = java.sql.Date.valueOf(endDate);
+                    // FIX: Use java.util.Date instead of java.sql.Date
+                    Date startUtilDate = java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                    Date endUtilDate = java.util.Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-                    boolean success = dataStore.saveLeaveRequest(supervisor.getId(), leaveTypeCombo.getValue(),
-                            startSqlDate, endSqlDate, reasonArea.getText());
-                    if (success) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
-                        showMyLeaveRequests(); // Refresh
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
+                    try {
+                        boolean success = dataStore.saveLeaveRequest(supervisor.getId(), leaveTypeCombo.getValue(),
+                                startUtilDate, endUtilDate, reasonArea.getText());
+                        if (success) {
+                            showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
+                            showMyLeaveRequests(); // Refresh
+                        } else {
+                            showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
+                        }
+                    } catch (Exception e) {
+                        logger.severe("Error submitting leave request: " + e.getMessage());
+                        e.printStackTrace();
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request: " + e.getMessage());
                     }
                 } else {
                     showAlert(Alert.AlertType.WARNING, "Invalid Input", "Please select start and end dates.");
@@ -685,9 +714,11 @@ public class SupervisorDashboardController {
         Label title = new Label("Leave Request Approvals");
         title.getStyleClass().add("content-title");
 
-        TableView<LeaveRequest> approvalTable = createLeaveApprovalTable();
+        if (leaveApprovalsTable == null) {
+            leaveApprovalsTable = createLeaveApprovalTable();
+        }
 
-        content.getChildren().addAll(title, approvalTable);
+        content.getChildren().addAll(title, leaveApprovalsTable);
         contentArea.getChildren().add(content);
     }
 
@@ -748,36 +779,81 @@ public class SupervisorDashboardController {
 
         table.getColumns().addAll(employeeCol, typeCol, startDateCol, endDateCol, daysCol, reasonCol, actionCol);
 
-        if (dataStore != null && supervisor != null) {
-            List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(supervisor.getId());
-            table.setItems(FXCollections.observableArrayList(pendingRequests));
-        }
-        table.setPrefHeight(400);
+        refreshLeaveApprovalsTable(table);
 
+        table.setPrefHeight(400);
         return table;
     }
 
-    private void showLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
-        LeaveRequestApprovalDialog dialog = new LeaveRequestApprovalDialog(request, supervisor, dataStore, isApproval);
-        dialog.showAndWait().ifPresent(result -> {
-            ButtonType approveBtn = new ButtonType("Approve", ButtonBar.ButtonData.OK_DONE);
-            ButtonType rejectBtn = new ButtonType("Reject", ButtonBar.ButtonData.OTHER);
+    private void refreshLeaveApprovalsTable(TableView<LeaveRequest> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(pendingRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading leave requests for approval: " + e.getMessage());
+            }
+        }
+    }
 
-            if (result == approveBtn) {
-                boolean success = dataStore.approveLeaveRequest(request.getId(), supervisor.getId(), dialog.getNotes());
-                if (success) {
-                    showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request approved successfully!");
-                    showLeaveApprovalsContent(); // Refresh
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to approve leave request.");
+    private void showLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(isApproval ? "Approve Leave Request" : "Reject Leave Request");
+
+        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
+        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
+
+        dialog.setHeaderText((isApproval ? "Approve" : "Reject") + " leave request from " + employeeName);
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+
+        // Request summary
+        VBox summaryBox = new VBox(5);
+        summaryBox.getChildren().addAll(
+                new Label("Employee: " + employeeName + " (" + request.getEmployeeId() + ")"),
+                new Label("Leave Type: " + request.getLeaveType()),
+                new Label("Period: " + sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate())),
+                new Label("Total Days: " + request.getTotalDays()),
+                new Label("Reason: " + request.getReason())
+        );
+
+        // Supervisor notes
+        Label notesLabel = new Label("Supervisor Notes:");
+        TextArea notesArea = new TextArea();
+        notesArea.setPromptText("Enter your " + (isApproval ? "approval" : "rejection") + " notes...");
+        notesArea.setPrefRowCount(4);
+
+        content.getChildren().addAll(summaryBox, new Separator(), notesLabel, notesArea);
+
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType actionButton = new ButtonType(isApproval ? "Approve" : "Reject", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(actionButton, cancelButton);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == actionButton) {
+                String notes = notesArea.getText().trim();
+                if (notes.isEmpty()) {
+                    notes = isApproval ? "Approved by supervisor" : "Rejected by supervisor";
                 }
-            } else if (result == rejectBtn) {
-                boolean success = dataStore.rejectLeaveRequest(request.getId(), supervisor.getId(), dialog.getNotes());
-                if (success) {
-                    showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request rejected.");
-                    showLeaveApprovalsContent(); // Refresh
+
+                boolean success;
+                if (isApproval) {
+                    success = dataStore.approveLeaveRequest(request.getId(), supervisor.getId(), notes);
                 } else {
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to reject leave request.");
+                    success = dataStore.rejectLeaveRequest(request.getId(), supervisor.getId(), notes);
+                }
+
+                if (success) {
+                    showAlert(Alert.AlertType.INFORMATION, "Success",
+                            "Leave request " + (isApproval ? "approved" : "rejected") + " successfully!");
+                    showLeaveApprovalsContent(); // Refresh the view
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Error",
+                            "Failed to " + (isApproval ? "approve" : "reject") + " leave request.");
                 }
             }
         });
@@ -797,7 +873,9 @@ public class SupervisorDashboardController {
         Label title = new Label("Team Management - " + supervisor.getDivisi() + " Division");
         title.getStyleClass().add("content-title");
 
-        TableView<Employee> teamTable = createTeamTable();
+        if (teamTable == null) {
+            teamTable = createTeamTable();
+        }
 
         content.getChildren().addAll(title, teamTable);
         contentArea.getChildren().add(content);
@@ -828,17 +906,29 @@ public class SupervisorDashboardController {
         riskCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().isLayoffRisk() ? "⚠️ Yes" : "✅ No"));
 
-        table.getColumns().addAll(idCol, nameCol, positionCol, kpiCol, ratingCol, riskCol);
+        TableColumn<Employee, String> salaryCol = new TableColumn<>("Current Salary");
+        salaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
 
-        if (dataStore != null && supervisor != null) {
-            List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                    .filter(emp -> emp.getRole().equals("pegawai"))
-                    .collect(Collectors.toList());
-            table.setItems(FXCollections.observableArrayList(teamMembers));
-        }
+        table.getColumns().addAll(idCol, nameCol, positionCol, kpiCol, ratingCol, riskCol, salaryCol);
+
+        refreshTeamTable(table);
+
         table.setPrefHeight(400);
-
         return table;
+    }
+
+    private void refreshTeamTable(TableView<Employee> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+                table.setItems(FXCollections.observableArrayList(teamMembers));
+            } catch (Exception e) {
+                logger.severe("Error loading team members: " + e.getMessage());
+            }
+        }
     }
 
     private void showMonthlyEvaluationContent() {
@@ -855,9 +945,18 @@ public class SupervisorDashboardController {
         Label title = new Label("Monthly Employee Evaluation");
         title.getStyleClass().add("content-title");
 
-        VBox evaluationForm = createMonthlyEvaluationForm();
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
 
-        content.getChildren().addAll(title, evaluationForm);
+        Tab evaluateTab = new Tab("Evaluate Employee", createMonthlyEvaluationForm());
+        Tab historyTab = new Tab("Evaluation History", createEvaluationHistoryTable());
+
+        evaluateTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(evaluateTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
         contentArea.getChildren().add(content);
     }
 
@@ -876,10 +975,15 @@ public class SupervisorDashboardController {
         formGrid.setAlignment(Pos.CENTER);
 
         ComboBox<Employee> employeeCombo = new ComboBox<>();
-        List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                .filter(emp -> emp.getRole().equals("pegawai"))
-                .collect(Collectors.toList());
-        employeeCombo.getItems().addAll(teamMembers);
+        try {
+            List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                    .filter(emp -> emp.getRole().equals("pegawai"))
+                    .collect(Collectors.toList());
+            employeeCombo.getItems().addAll(teamMembers);
+        } catch (Exception e) {
+            logger.severe("Error loading team members for evaluation: " + e.getMessage());
+        }
+
         employeeCombo.setConverter(new javafx.util.StringConverter<Employee>() {
             @Override
             public String toString(Employee employee) {
@@ -962,42 +1066,49 @@ public class SupervisorDashboardController {
                 int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
                 int year = yearCombo.getValue();
 
-                // Check if evaluation already exists
-                if (dataStore.hasMonthlyEvaluation(selectedEmployee.getId(), month, year)) {
-                    Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-                    confirmAlert.setTitle("Evaluation Exists");
-                    confirmAlert.setContentText("Monthly evaluation for this employee already exists. Do you want to update it?");
-                    if (confirmAlert.showAndWait().get() != ButtonType.OK) {
-                        return;
+                try {
+                    // Check if evaluation already exists
+                    if (dataStore.hasMonthlyEvaluation(selectedEmployee.getId(), month, year)) {
+                        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                        confirmAlert.setTitle("Evaluation Exists");
+                        confirmAlert.setContentText("Monthly evaluation for this employee already exists. Do you want to update it?");
+                        if (confirmAlert.showAndWait().get() != ButtonType.OK) {
+                            return;
+                        }
                     }
-                }
 
-                double punctuality = punctualitySlider.getValue();
-                double attendance = attendanceSlider.getValue();
-                double productivity = productivitySlider.getValue();
-                double overall = (punctuality + attendance + productivity) / 3;
+                    double punctuality = punctualitySlider.getValue();
+                    double attendance = attendanceSlider.getValue();
+                    double productivity = productivitySlider.getValue();
+                    double overall = (punctuality + attendance + productivity) / 3;
 
-                boolean success = dataStore.saveMonthlyEmployeeEvaluation(
-                        selectedEmployee.getId(),
-                        supervisor.getId(),
-                        month,
-                        year,
-                        punctuality,
-                        attendance,
-                        productivity,
-                        overall,
-                        commentsArea.getText()
-                );
+                    boolean success = dataStore.saveMonthlyEmployeeEvaluation(
+                            selectedEmployee.getId(),
+                            supervisor.getId(),
+                            month,
+                            year,
+                            punctuality,
+                            attendance,
+                            productivity,
+                            overall,
+                            commentsArea.getText()
+                    );
 
-                if (success) {
-                    showAlert(Alert.AlertType.INFORMATION, "Success", "Monthly evaluation saved successfully!");
-                    employeeCombo.setValue(null);
-                    punctualitySlider.setValue(75);
-                    attendanceSlider.setValue(75);
-                    productivitySlider.setValue(75);
-                    commentsArea.clear();
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation.");
+                    if (success) {
+                        showAlert(Alert.AlertType.INFORMATION, "Success", "Monthly evaluation saved successfully!");
+                        employeeCombo.setValue(null);
+                        punctualitySlider.setValue(75);
+                        attendanceSlider.setValue(75);
+                        productivitySlider.setValue(75);
+                        commentsArea.clear();
+                        refreshEvaluationHistoryTable();
+                        refreshTeamTable(teamTable);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation.");
+                    }
+                } catch (Exception ex) {
+                    logger.severe("Error saving evaluation: " + ex.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation: " + ex.getMessage());
                 }
             } else {
                 showAlert(Alert.AlertType.WARNING, "Warning", "Please select an employee.");
@@ -1006,6 +1117,67 @@ public class SupervisorDashboardController {
 
         form.getChildren().addAll(formTitle, formGrid, submitBtn);
         return form;
+    }
+
+    private TableView<MySQLDataStore.MonthlyEvaluation> createEvaluationHistoryTable() {
+        TableView<MySQLDataStore.MonthlyEvaluation> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(new PropertyValueFactory<>("month"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> punctualityCol = new TableColumn<>("Punctuality");
+        punctualityCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getPunctualityScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> attendanceCol = new TableColumn<>("Attendance");
+        attendanceCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getAttendanceScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> productivityCol = new TableColumn<>("Productivity");
+        productivityCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getProductivityScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> overallCol = new TableColumn<>("Overall Rating");
+        overallCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getOverallRating()) + "%"));
+
+        table.getColumns().addAll(employeeCol, monthCol, yearCol, punctualityCol, attendanceCol, productivityCol, overallCol);
+
+        if (evaluationsHistoryTable == null) {
+            evaluationsHistoryTable = table;
+        }
+
+        refreshEvaluationHistoryTable(table);
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void refreshEvaluationHistoryTable() {
+        if (evaluationsHistoryTable != null) {
+            refreshEvaluationHistoryTable(evaluationsHistoryTable);
+        }
+    }
+
+    private void refreshEvaluationHistoryTable(TableView<MySQLDataStore.MonthlyEvaluation> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<MySQLDataStore.MonthlyEvaluation> evaluations = dataStore.getMonthlyEvaluationsBySupervisor(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(evaluations));
+            } catch (Exception e) {
+                logger.severe("Error loading evaluation history: " + e.getMessage());
+            }
+        }
     }
 
     private void showUploadReportContent() {
@@ -1022,9 +1194,18 @@ public class SupervisorDashboardController {
         Label title = new Label("Upload Monthly Report");
         title.getStyleClass().add("content-title");
 
-        VBox uploadForm = createReportUploadForm();
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
 
-        content.getChildren().addAll(title, uploadForm);
+        Tab uploadTab = new Tab("Upload Report", createReportUploadForm());
+        Tab historyTab = new Tab("Report History", createReportHistoryTable());
+
+        uploadTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(uploadTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
         contentArea.getChildren().add(content);
     }
 
@@ -1084,6 +1265,7 @@ public class SupervisorDashboardController {
         formGrid.add(yearCombo, 1, row++);
         formGrid.add(new Label("Report File:"), 0, row);
         HBox fileBox = new HBox(10, filePathField, browseBtn);
+        filePathField.setPrefWidth(300);
         formGrid.add(fileBox, 1, row);
 
         Button uploadBtn = new Button("Upload Report");
@@ -1091,22 +1273,28 @@ public class SupervisorDashboardController {
 
         uploadBtn.setOnAction(e -> {
             if (!filePathField.getText().isEmpty()) {
-                int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
-                int year = yearCombo.getValue();
+                try {
+                    int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
+                    int year = yearCombo.getValue();
 
-                boolean success = dataStore.saveReport(
-                        supervisor.getId(),
-                        supervisor.getDivisi(),
-                        month,
-                        year,
-                        filePathField.getText()
-                );
+                    boolean success = dataStore.saveReport(
+                            supervisor.getId(),
+                            supervisor.getDivisi(),
+                            month,
+                            year,
+                            filePathField.getText()
+                    );
 
-                if (success) {
-                    showAlert(Alert.AlertType.INFORMATION, "Success", "Report uploaded successfully!");
-                    filePathField.clear();
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report.");
+                    if (success) {
+                        showAlert(Alert.AlertType.INFORMATION, "Success", "Report uploaded successfully!");
+                        filePathField.clear();
+                        refreshReportHistoryTable();
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report.");
+                    }
+                } catch (Exception ex) {
+                    logger.severe("Error uploading report: " + ex.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report: " + ex.getMessage());
                 }
             } else {
                 showAlert(Alert.AlertType.WARNING, "Warning", "Please select a report file.");
@@ -1117,109 +1305,7 @@ public class SupervisorDashboardController {
         return form;
     }
 
-    // Placeholder methods for remaining features
-    private void showPerformanceAnalyticsContent() {
-        if (supervisor == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        contentArea.getChildren().clear();
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("Performance Analytics - " + supervisor.getDivisi());
-        title.getStyleClass().add("content-title");
-
-        // Team Performance Overview
-        HBox performanceCards = createPerformanceOverviewCards();
-
-        // Performance Trend Chart (placeholder)
-        Label chartPlaceholder = new Label("📊 Performance trends and analytics will be displayed here");
-        chartPlaceholder.setStyle("-fx-font-size: 16px; -fx-padding: 50;");
-
-        content.getChildren().addAll(title, performanceCards, chartPlaceholder);
-        contentArea.getChildren().add(content);
-    }
-
-    private HBox createPerformanceOverviewCards() {
-        HBox cardsContainer = new HBox(20);
-        cardsContainer.setAlignment(Pos.CENTER);
-
-        if (dataStore != null && supervisor != null) {
-            List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                    .filter(emp -> emp.getRole().equals("pegawai"))
-                    .collect(Collectors.toList());
-
-            double avgKpi = teamMembers.stream().mapToDouble(Employee::getKpiScore).average().orElse(0.0);
-            double avgRating = teamMembers.stream().mapToDouble(Employee::getSupervisorRating).average().orElse(0.0);
-            long highPerformers = teamMembers.stream().filter(emp -> emp.getKpiScore() >= 80 && emp.getSupervisorRating() >= 80).count();
-
-            VBox avgKpiCard = createStatsCard("Average KPI", String.format("%.1f%%", avgKpi), "📊", "#3498db");
-            VBox avgRatingCard = createStatsCard("Average Rating", String.format("%.1f%%", avgRating), "⭐", "#2ecc71");
-            VBox highPerformersCard = createStatsCard("High Performers", String.valueOf(highPerformers), "🏆", "#f39c12");
-
-            cardsContainer.getChildren().addAll(avgKpiCard, avgRatingCard, highPerformersCard);
-        }
-
-        return cardsContainer;
-    }
-
-    private void showSalaryManagementContent() {
-        if (supervisor == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        contentArea.getChildren().clear();
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("Salary Management - " + supervisor.getDivisi());
-        title.getStyleClass().add("content-title");
-
-        Label placeholder = new Label("💰 Salary management features for team members will be available here");
-        placeholder.setStyle("-fx-font-size: 16px; -fx-padding: 50;");
-
-        content.getChildren().addAll(title, placeholder);
-        contentArea.getChildren().add(content);
-    }
-
-    private void showAllHistoryContent() {
-        if (supervisor == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        contentArea.getChildren().clear();
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("All History - " + supervisor.getDivisi());
-        title.getStyleClass().add("content-title");
-
-        TabPane historyTabs = new TabPane();
-        historyTabs.getStyleClass().add("custom-tab-pane");
-
-        // Reports History
-        Tab reportsTab = new Tab("Reports", createReportsHistoryTable());
-
-        // Evaluations History
-        Tab evaluationsTab = new Tab("Evaluations", createEvaluationsHistoryTable());
-
-        reportsTab.setClosable(false);
-        evaluationsTab.setClosable(false);
-
-        historyTabs.getTabs().addAll(reportsTab, evaluationsTab);
-
-        content.getChildren().addAll(title, historyTabs);
-        contentArea.getChildren().add(content);
-    }
-
-    private TableView<Report> createReportsHistoryTable() {
+    private TableView<Report> createReportHistoryTable() {
         TableView<Report> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
@@ -1242,47 +1328,432 @@ public class SupervisorDashboardController {
 
         table.getColumns().addAll(monthCol, yearCol, statusCol, uploadDateCol, notesCol);
 
-        if (dataStore != null && supervisor != null) {
-            List<Report> myReports = dataStore.getReportsByDivision(supervisor.getDivisi());
-            table.setItems(FXCollections.observableArrayList(myReports));
+        if (reportHistoryTable == null) {
+            reportHistoryTable = table;
         }
-        table.setPrefHeight(350);
 
+        refreshReportHistoryTable(table);
+
+        table.setPrefHeight(400);
         return table;
     }
 
-    private TableView<MySQLDataStore.MonthlyEvaluation> createEvaluationsHistoryTable() {
-        TableView<MySQLDataStore.MonthlyEvaluation> table = new TableView<>();
+    private void refreshReportHistoryTable() {
+        if (reportHistoryTable != null) {
+            refreshReportHistoryTable(reportHistoryTable);
+        }
+    }
+
+    private void refreshReportHistoryTable(TableView<Report> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Report> myReports = dataStore.getReportsByDivision(supervisor.getDivisi());
+                table.setItems(FXCollections.observableArrayList(myReports));
+            } catch (Exception e) {
+                logger.severe("Error loading report history: " + e.getMessage());
+            }
+        }
+    }
+
+    private void showPerformanceAnalyticsContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Performance Analytics - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        // Team Performance Overview
+        HBox performanceCards = createPerformanceOverviewCards();
+
+        // Performance Details Table
+        TableView<Employee> performanceTable = createPerformanceDetailsTable();
+
+        content.getChildren().addAll(title, performanceCards, performanceTable);
+        contentArea.getChildren().add(content);
+    }
+
+    private HBox createPerformanceOverviewCards() {
+        HBox cardsContainer = new HBox(20);
+        cardsContainer.setAlignment(Pos.CENTER);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                double avgKpi = teamMembers.stream().mapToDouble(Employee::getKpiScore).average().orElse(0.0);
+                double avgRating = teamMembers.stream().mapToDouble(Employee::getSupervisorRating).average().orElse(0.0);
+                long highPerformers = teamMembers.stream().filter(emp -> emp.getKpiScore() >= 80 && emp.getSupervisorRating() >= 80).count();
+                long underPerformers = teamMembers.stream().filter(emp -> emp.getKpiScore() < 60 || emp.getSupervisorRating() < 60).count();
+
+                VBox avgKpiCard = createStatsCard("Average KPI", String.format("%.1f%%", avgKpi), "📊", "#3498db");
+                VBox avgRatingCard = createStatsCard("Average Rating", String.format("%.1f%%", avgRating), "⭐", "#2ecc71");
+                VBox highPerformersCard = createStatsCard("High Performers", String.valueOf(highPerformers), "🏆", "#f39c12");
+                VBox underPerformersCard = createStatsCard("Need Improvement", String.valueOf(underPerformers), "⚠️", "#e74c3c");
+
+                cardsContainer.getChildren().addAll(avgKpiCard, avgRatingCard, highPerformersCard, underPerformersCard);
+            } catch (Exception e) {
+                logger.severe("Error creating performance overview cards: " + e.getMessage());
+            }
+        }
+
+        return cardsContainer;
+    }
+
+    private TableView<Employee> createPerformanceDetailsTable() {
+        TableView<Employee> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<MySQLDataStore.MonthlyEvaluation, String> employeeCol = new TableColumn<>("Employee");
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Employee");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
+
+        TableColumn<Employee, String> kpiCol = new TableColumn<>("KPI Score");
+        kpiCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
+
+        TableColumn<Employee, String> ratingCol = new TableColumn<>("Supervisor Rating");
+        ratingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
+
+        TableColumn<Employee, String> attendanceCol = new TableColumn<>("Attendance Score");
+        attendanceCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getAttendanceScore()) + "%"));
+
+        TableColumn<Employee, String> performanceCol = new TableColumn<>("Performance Level");
+        performanceCol.setCellValueFactory(cellData -> {
+            Employee emp = cellData.getValue();
+            double avgScore = (emp.getKpiScore() + emp.getSupervisorRating()) / 2;
+            String level;
+            if (avgScore >= 90) level = "🏆 Excellent";
+            else if (avgScore >= 80) level = "⭐ Good";
+            else if (avgScore >= 70) level = "✅ Satisfactory";
+            else if (avgScore >= 60) level = "⚠️ Needs Improvement";
+            else level = "❌ Poor";
+            return new javafx.beans.property.SimpleStringProperty(level);
+        });
+
+        TableColumn<Employee, String> salaryCol = new TableColumn<>("Current Salary");
+        salaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(nameCol, kpiCol, ratingCol, attendanceCol, performanceCol, salaryCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+                table.setItems(FXCollections.observableArrayList(teamMembers));
+            } catch (Exception e) {
+                logger.severe("Error loading performance details: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void showSalaryManagementContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Salary Management - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab teamSalaryTab = new Tab("Team Salary Overview", createTeamSalaryTable());
+        Tab salaryHistoryTab = new Tab("Salary History", createTeamSalaryHistoryTable());
+
+        teamSalaryTab.setClosable(false);
+        salaryHistoryTab.setClosable(false);
+
+        tabPane.getTabs().addAll(teamSalaryTab, salaryHistoryTab);
+
+        content.getChildren().addAll(title, tabPane);
+        contentArea.getChildren().add(content);
+    }
+
+    private TableView<Employee> createTeamSalaryTable() {
+        TableView<Employee> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Employee");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
+
+        TableColumn<Employee, String> positionCol = new TableColumn<>("Position");
+        positionCol.setCellValueFactory(new PropertyValueFactory<>("jabatan"));
+
+        TableColumn<Employee, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getGajiPokok())));
+
+        TableColumn<Employee, String> kpiCol = new TableColumn<>("KPI Score");
+        kpiCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
+
+        TableColumn<Employee, String> ratingCol = new TableColumn<>("Rating");
+        ratingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
+
+        TableColumn<Employee, String> currentSalaryCol = new TableColumn<>("Current Total Salary");
+        currentSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(nameCol, positionCol, baseSalaryCol, kpiCol, ratingCol, currentSalaryCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+                table.setItems(FXCollections.observableArrayList(teamMembers));
+            } catch (Exception e) {
+                logger.severe("Error loading team salary data: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private TableView<SalaryHistory> createTeamSalaryHistoryTable() {
+        TableView<SalaryHistory> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<SalaryHistory, String> employeeCol = new TableColumn<>("Employee");
         employeeCol.setCellValueFactory(cellData -> {
             Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
             return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
         });
 
-        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> monthCol = new TableColumn<>("Month");
-        monthCol.setCellValueFactory(new PropertyValueFactory<>("month"));
+        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
 
-        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> yearCol = new TableColumn<>("Year");
-        yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
+        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
 
-        TableColumn<MySQLDataStore.MonthlyEvaluation, String> overallCol = new TableColumn<>("Overall Rating");
-        overallCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getOverallRating()) + "%"));
+        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getBaseSalary())));
 
-        TableColumn<MySQLDataStore.MonthlyEvaluation, String> dateCol = new TableColumn<>("Evaluation Date");
-        dateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEvaluationDate())));
+        TableColumn<SalaryHistory, String> kpiBonusCol = new TableColumn<>("KPI Bonus");
+        kpiBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getKpiBonus())));
 
-        table.getColumns().addAll(employeeCol, monthCol, yearCol, overallCol, dateCol);
+        TableColumn<SalaryHistory, String> supervisorBonusCol = new TableColumn<>("Supervisor Bonus");
+        supervisorBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getSupervisorBonus())));
+
+        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("Total Salary");
+        totalSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getTotalSalary())));
+
+        table.getColumns().addAll(employeeCol, monthCol, yearCol, baseSalaryCol, kpiBonusCol, supervisorBonusCol, totalSalaryCol);
 
         if (dataStore != null && supervisor != null) {
-            List<MySQLDataStore.MonthlyEvaluation> myEvaluations = dataStore.getMonthlyEvaluationsBySupervisor(supervisor.getId());
-            table.setItems(FXCollections.observableArrayList(myEvaluations));
-        }
-        table.setPrefHeight(350);
+            try {
+                // Get salary history for team members
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
 
+                List<SalaryHistory> teamSalaryHistory = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getSalaryHistoryByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamSalaryHistory));
+            } catch (Exception e) {
+                logger.severe("Error loading team salary history: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void showAllHistoryContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("All History - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        TabPane historyTabs = new TabPane();
+        historyTabs.getStyleClass().add("custom-tab-pane");
+
+        Tab reportsTab = new Tab("Reports", createReportHistoryTable());
+        Tab evaluationsTab = new Tab("Evaluations", createEvaluationHistoryTable());
+        Tab leaveRequestsTab = new Tab("Leave Requests", createTeamLeaveRequestsTable());
+        Tab meetingsTab = new Tab("Meetings", createTeamMeetingsTable());
+        Tab attendanceTab = new Tab("Team Attendance", createTeamAttendanceTable());
+
+        reportsTab.setClosable(false);
+        evaluationsTab.setClosable(false);
+        leaveRequestsTab.setClosable(false);
+        meetingsTab.setClosable(false);
+        attendanceTab.setClosable(false);
+
+        historyTabs.getTabs().addAll(reportsTab, evaluationsTab, leaveRequestsTab, meetingsTab, attendanceTab);
+
+        content.getChildren().addAll(title, historyTabs);
+        contentArea.getChildren().add(content);
+    }
+
+    private TableView<LeaveRequest> createTeamLeaveRequestsTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<LeaveRequest, String> requestDateCol = new TableColumn<>("Request Date");
+        requestDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getRequestDate())));
+
+        table.getColumns().addAll(employeeCol, typeCol, startDateCol, daysCol, statusCol, requestDateCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                // Get leave requests for team members
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                List<LeaveRequest> teamLeaveRequests = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getLeaveRequestsByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamLeaveRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading team leave requests: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
+        return table;
+    }
+
+    private TableView<Meeting> createTeamMeetingsTable() {
+        TableView<Meeting> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
+
+        TableColumn<Meeting, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("lokasi"));
+
+        TableColumn<Meeting, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol, statusCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(myMeetings));
+            } catch (Exception e) {
+                logger.severe("Error loading team meetings: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
+        return table;
+    }
+
+    private TableView<Attendance> createTeamAttendanceTable() {
+        TableView<Attendance> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Attendance, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<Attendance, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Attendance, String> clockInCol = new TableColumn<>("Clock In");
+        clockInCol.setCellValueFactory(new PropertyValueFactory<>("jamMasuk"));
+
+        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("Clock Out");
+        clockOutCol.setCellValueFactory(new PropertyValueFactory<>("jamKeluar"));
+
+        TableColumn<Attendance, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(employeeCol, dateCol, clockInCol, clockOutCol, statusCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                // Get attendance for team members (last 30 days)
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                List<Attendance> teamAttendance = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getAttendanceByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamAttendance));
+            } catch (Exception e) {
+                logger.severe("Error loading team attendance: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
         return table;
     }
 
