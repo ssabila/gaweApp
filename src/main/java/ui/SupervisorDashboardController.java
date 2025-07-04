@@ -106,7 +106,8 @@ public class SupervisorDashboardController {
                     createNavButton("📄 Upload Report", this::showUploadReportContent),
                     createNavButton("📈 Performance Analytics", this::showPerformanceAnalyticsContent),
                     createNavButton("💰 Salary Management", this::showSalaryManagementContent),
-                    createNavButton("📋 All History", this::showAllHistoryContent)
+                    createNavButton("📋 All History", this::showAllHistoryContent),
+                    createNavButton("👤 Edit Profile", this::showEditProfileDialog)
             };
             navButtonContainer.getChildren().addAll(navButtons);
         }
@@ -1763,5 +1764,49 @@ public class SupervisorDashboardController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void showEditProfileDialog() {
+        if (supervisor == null || dataStore == null) {
+            return;
+        }
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit Profile");
+        dialog.setHeaderText("Update your name and password.");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField nameField = new TextField();
+        nameField.setText(supervisor.getNama());
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setText(supervisor.getPassword());
+
+        grid.add(new Label("Name:"), 0, 0);
+        grid.add(nameField, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(passwordField, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK) {
+                supervisor.setNama(nameField.getText());
+                supervisor.setPassword(passwordField.getText());
+                try {
+                    dataStore.updateEmployee(supervisor);
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully!");
+                    userWelcomeLabel.setText("Welcome, " + supervisor.getNama() + " (" + supervisor.getDivisi() + ")");
+                } catch (Exception e) {
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to update profile.");
+                }
+            }
+        });
     }
 }
