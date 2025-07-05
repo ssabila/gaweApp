@@ -61,9 +61,9 @@
                                         <Label styleClass="form-label-login" text="🔒 Password" />
                                         <StackPane>
                                             <children>
-                                                <PasswordField fx:id="passwordField" promptText="Enter your password" styleClass="login-form-field" />
+                                                <PasswordField fx:id="passwordField" onKeyPressed="#handleKeyPress" promptText="Enter your password" styleClass="login-form-field" />
                                                 <TextField fx:id="passwordTextField" promptText="Enter your password" styleClass="login-form-field" visible="false" />
-                                                <HBox alignment="CENTER_RIGHT" StackPane.alignment="CENTER_RIGHT">
+                                                <HBox alignment="CENTER_RIGHT" pickOnBounds="false" StackPane.alignment="CENTER_RIGHT">
                                                     <children>
                                                         <Button fx:id="togglePasswordVisibility" onAction="#togglePasswordVisibility" style="-fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6;">
                                                             <graphic>

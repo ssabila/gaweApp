@@ -5,10 +5,10 @@ import server.GaweServer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -116,7 +116,8 @@ public class HelloApplication extends Application {
             FXMLLoader fxmlLoader = new FXMLLoader(fxmlLocation);
             System.out.println("FXMLLoader created successfully");
 
-            BorderPane root = fxmlLoader.load();
+            // FIX: Changed BorderPane to Parent to avoid ClassCastException
+            Parent root = fxmlLoader.load();
             System.out.println("✅ Step 4: FXML loaded successfully");
 
             // Step 4: Get Controller

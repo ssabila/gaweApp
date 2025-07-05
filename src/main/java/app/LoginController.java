@@ -155,6 +155,13 @@ public class LoginController {
     }
 
     @FXML
+    private void handleKeyPress(javafx.scene.input.KeyEvent event) {
+        if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
+            handleLogin();
+        }
+    }
+
+    @FXML
     private void handleLogin() {
         String employeeId = employeeIdField.getText().trim();
         String password = isPasswordVisible ? passwordTextField.getText() : passwordField.getText();
@@ -216,7 +223,7 @@ public class LoginController {
 
     private void addShakeAnimation() {
         // Add shake animation to the form
-        javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(Duration.millis(50), employeeIdField.getParent());
+        javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(Duration.millis(50), employeeIdField.getScene().getRoot());
         shake.setFromX(0);
         shake.setToX(10);
         shake.setCycleCount(6);
@@ -257,26 +264,39 @@ public class LoginController {
         try {
             Stage dashboardStage = new Stage();
 
-            switch (employee.getRole().toLowerCase()) {
-                case "manajer":
-                    System.out.println("Opening Manager Dashboard...");
-                    openManagerDashboard(employee, dashboardStage);
-                    break;
-                case "supervisor":
-                    System.out.println("Opening Supervisor Dashboard...");
-                    openSupervisorDashboard(employee, dashboardStage);
-                    break;
-                case "pegawai":
-                    System.out.println("Opening Employee Dashboard...");
-                    openEmployeeDashboard(employee, dashboardStage);
-                    break;
-                default:
-                    System.err.println("❌ Unknown user role: " + employee.getRole());
-                    showStyledAlert(Alert.AlertType.ERROR, "Error", "Unknown user role: " + employee.getRole());
-                    return;
-            }
+            // Using a Map for role-based dashboard opening
+            java.util.Map<String, java.util.function.BiConsumer<Employee, Stage>> dashboardOpeners = new java.util.HashMap<>();
+            dashboardOpeners.put("manajer", (emp, stage) -> {
+                try {
+                    openManagerDashboard(emp, stage);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            dashboardOpeners.put("supervisor", (emp, stage) -> {
+                try {
+                    openSupervisorDashboard(emp, stage);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            dashboardOpeners.put("pegawai", (emp, stage) -> {
+                try {
+                    openEmployeeDashboard(emp, stage);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
-            System.out.println("✅ Dashboard opened successfully");
+            String role = employee.getRole().toLowerCase();
+            if (dashboardOpeners.containsKey(role)) {
+                System.out.println("Opening " + role + " dashboard...");
+                dashboardOpeners.get(role).accept(employee, dashboardStage);
+                System.out.println("✅ Dashboard opened successfully");
+            } else {
+                System.err.println("❌ Unknown user role: " + employee.getRole());
+                showStyledAlert(Alert.AlertType.ERROR, "Error", "Unknown user role: " + employee.getRole());
+            }
 
         } catch (Exception e) {
             System.err.println("❌ Failed to open dashboard: " + e.getMessage());
