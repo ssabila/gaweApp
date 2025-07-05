@@ -48,8 +48,8 @@
                         <VBox alignment="CENTER" styleClass="user-info-section">
                             <children>
                                 <Label styleClass="user-avatar" text="👤" />
-                                <Label fx:id="navUserGreeting" styleClass="user-greeting" text="Hello, Employee!" />
-                                <Label styleClass="user-role" text="Employee Dashboard" />
+                                <Label fx:id="navUserGreeting" styleClass="user-greeting" text="Hello, Manager!" />
+                                <Label styleClass="user-role" text="Manager Dashboard" />
                             </children>
                         </VBox>
 

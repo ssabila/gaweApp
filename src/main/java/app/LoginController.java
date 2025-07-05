@@ -175,7 +175,6 @@ public class LoginController {
         // Add loading animation to login button
         Button loginButton = (Button) employeeIdField.getScene().lookup(".button");
         if (loginButton != null) {
-            loginButton.setText("Signing In...");
             loginButton.setDisable(true);
         }
 
@@ -200,7 +199,6 @@ public class LoginController {
 
                 // Reset login button
                 if (loginButton != null) {
-                    loginButton.setText("Sign In");
                     loginButton.setDisable(false);
                 }
 
