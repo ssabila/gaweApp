@@ -42,6 +42,8 @@ public class EmployeeDashboardController {
     @FXML
     private Label userWelcomeLabel;
     @FXML
+    private Label navUserGreeting;
+    @FXML
     private VBox navButtonContainer;
     @FXML
     private StackPane contentArea;
@@ -60,8 +62,9 @@ public class EmployeeDashboardController {
         if (userWelcomeLabel != null) {
             userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
         }
-
-        // Initialize content after employee is set
+        if (navUserGreeting != null) {
+            navUserGreeting.setText("Hello, " + employee.getNama() + "!");
+        }
         initializeContent();
     }
 
@@ -81,22 +84,17 @@ public class EmployeeDashboardController {
 
     @FXML
     public void initialize() {
-        // Only do basic FXML initialization here
-        // Don't call methods that need employee or dataStore
         populateNavigationButtons();
-
-        // Content will be initialized when employee and dataStore are set
     }
 
     private void initializeContent() {
-        // Only initialize content if both employee and dataStore are available
         if (employee != null && dataStore != null) {
-            // Update welcome label if it wasn't set before
             if (userWelcomeLabel != null) {
                 userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
             }
-
-            // Show default dashboard content
+            if (navUserGreeting != null) {
+                navUserGreeting.setText("Hello, " + employee.getNama() + "!");
+            }
             showDashboardContent();
         }
     }
@@ -120,7 +118,7 @@ public class EmployeeDashboardController {
         Button button = new Button(text);
         button.setPrefWidth(240);
         button.setAlignment(Pos.CENTER_LEFT);
-        button.getStyleClass().add("nav-button"); // Apply CSS class
+        button.getStyleClass().add("nav-button");
         button.setOnAction(e -> action.run());
         return button;
     }
@@ -146,7 +144,6 @@ public class EmployeeDashboardController {
     }
 
     private void showDashboardContent() {
-        // Check if required objects are available
         if (employee == null || dataStore == null || contentArea == null) {
             logger.warning("Cannot show dashboard content - missing required objects");
             return;
@@ -154,11 +151,11 @@ public class EmployeeDashboardController {
 
         contentArea.getChildren().clear();
 
-        VBox content = new VBox(20);
+        VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("Employee Dashboard");
+        Label title = new Label("🏠 Employee Dashboard");
         title.getStyleClass().add("content-title");
 
         HBox quickActions = createQuickActions();
@@ -170,7 +167,7 @@ public class EmployeeDashboardController {
     }
 
     private HBox createQuickActions() {
-        HBox actionsBox = new HBox(15);
+        HBox actionsBox = new HBox(20);
         actionsBox.setAlignment(Pos.CENTER);
         actionsBox.getStyleClass().add("quick-actions-box");
 
@@ -234,7 +231,7 @@ public class EmployeeDashboardController {
         boolean success = dataStore.saveAttendance(employee.getId(), new Date(), timeStr, null, "hadir");
         if (success) {
             showAlert(Alert.AlertType.INFORMATION, "Clock In", "Successfully clocked in at " + timeStr);
-            showDashboardContent(); // Refresh dashboard
+            showDashboardContent();
         } else {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to clock in.");
         }
@@ -252,14 +249,14 @@ public class EmployeeDashboardController {
         boolean success = dataStore.updateAttendanceClockOut(employee.getId(), timeStr);
         if (success) {
             showAlert(Alert.AlertType.INFORMATION, "Clock Out", "Successfully clocked out at " + timeStr);
-            showDashboardContent(); // Refresh dashboard
+            showDashboardContent();
         } else {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to clock out.");
         }
     }
 
     private HBox createStatsCards() {
-        HBox statsContainer = new HBox(20);
+        HBox statsContainer = new HBox(25);
         statsContainer.setAlignment(Pos.CENTER);
         statsContainer.getStyleClass().add("stats-cards-container");
 
@@ -267,7 +264,6 @@ public class EmployeeDashboardController {
             return statsContainer;
         }
 
-        // Refresh employee object to get updated values
         Employee refreshedEmployee = dataStore.authenticateUser(employee.getId(), employee.getPassword());
         if (refreshedEmployee != null) {
             employee = refreshedEmployee;
@@ -275,22 +271,25 @@ public class EmployeeDashboardController {
             logger.warning("Could not refresh employee data for stats cards.");
         }
 
-        VBox attendanceScoreCard = createStatsCard("Attendance Score", String.format("%.1f%%", employee.getAttendanceScore()), "🎯", "#3498db");
-        VBox kpiScoreCard = createStatsCard("KPI Score", String.format("%.1f%%", employee.getKpiScore()), "📈", "#2ecc71");
-        VBox leaveDaysCard = createStatsCard("Remaining Leave", String.valueOf(employee.getSisaCuti()), "🏖️", "#f39c12");
-        VBox overallRatingCard = createStatsCard("Overall Rating", String.format("%.1f%%", employee.getOverallRating()), "⭐", "#9b59b6");
+        VBox kpiScoreCard = createStatsCard("📈 KPI Score", String.format("%.1f%%", employee.getKpiScore()), "#4facfe");
+        VBox leaveDaysCard = createStatsCard("🏖️ Leave Days", String.valueOf(employee.getSisaCuti()), "#56ab2f");
+        VBox overallRatingCard = createStatsCard("⭐ Rating", String.format("%.1f%%", employee.getOverallRating()), "#f093fb");
 
-        statsContainer.getChildren().addAll(attendanceScoreCard, kpiScoreCard, leaveDaysCard, overallRatingCard);
+        statsContainer.getChildren().addAll(kpiScoreCard, leaveDaysCard, overallRatingCard);
         return statsContainer;
     }
 
-    private VBox createStatsCard(String title, String value, String icon, String color) {
-        VBox card = new VBox(10);
+    private VBox createStatsCard(String title, String value, String color) {
+        VBox card = new VBox(12);
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(20));
-        card.setPrefSize(200, 120);
+        card.setPadding(new Insets(25));
+        card.setPrefSize(220, 140);
         card.getStyleClass().add("stats-card");
         card.setStyle(String.format("-fx-border-color: %s; -fx-border-width: 0 0 4 0;", color));
+
+        String[] parts = title.split(" ", 2);
+        String icon = parts[0];
+        String text = parts.length > 1 ? parts[1] : "";
 
         Label iconLabel = new Label(icon);
         iconLabel.getStyleClass().add("stats-card-icon");
@@ -299,7 +298,7 @@ public class EmployeeDashboardController {
         valueLabel.getStyleClass().add("stats-card-value");
         valueLabel.setStyle(String.format("-fx-text-fill: %s;", color));
 
-        Label titleLabel = new Label(title);
+        Label titleLabel = new Label(text);
         titleLabel.getStyleClass().add("stats-card-title");
 
         card.getChildren().addAll(iconLabel, valueLabel, titleLabel);
@@ -307,12 +306,12 @@ public class EmployeeDashboardController {
     }
 
     private VBox createRecentActivitiesSection() {
-        VBox section = new VBox(15);
+        VBox section = new VBox(18);
         section.setAlignment(Pos.CENTER);
-        section.setPadding(new Insets(20));
+        section.setPadding(new Insets(25));
         section.getStyleClass().add("recent-activities-section");
 
-        Label sectionTitle = new Label("Recent Activities");
+        Label sectionTitle = new Label("📋 Recent Activities");
         sectionTitle.getStyleClass().add("section-title");
 
         ListView<String> activitiesList = new ListView<>();
@@ -360,11 +359,11 @@ public class EmployeeDashboardController {
 
         contentArea.getChildren().clear();
 
-        VBox content = new VBox(20);
+        VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("My Attendance");
+        Label title = new Label("⏰ My Attendance");
         title.getStyleClass().add("content-title");
 
         TableView<Attendance> attendanceTable = createMyAttendanceTable();
@@ -377,18 +376,22 @@ public class EmployeeDashboardController {
         TableView<Attendance> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<Attendance, String> dateCol = new TableColumn<>("Date");
+        TableColumn<Attendance, String> dateCol = new TableColumn<>("📅 Date");
         dateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+        dateCol.setPrefWidth(120);
 
-        TableColumn<Attendance, String> clockInCol = new TableColumn<>("Clock In");
+        TableColumn<Attendance, String> clockInCol = new TableColumn<>("⏰ Clock In");
         clockInCol.setCellValueFactory(new PropertyValueFactory<>("jamMasuk"));
+        clockInCol.setPrefWidth(100);
 
-        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("Clock Out");
+        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("🏃 Clock Out");
         clockOutCol.setCellValueFactory(new PropertyValueFactory<>("jamKeluar"));
+        clockOutCol.setPrefWidth(100);
 
-        TableColumn<Attendance, String> statusCol = new TableColumn<>("Status");
+        TableColumn<Attendance, String> statusCol = new TableColumn<>("📊 Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setPrefWidth(80);
 
         table.getColumns().addAll(dateCol, clockInCol, clockOutCol, statusCol);
 
@@ -408,11 +411,11 @@ public class EmployeeDashboardController {
 
         contentArea.getChildren().clear();
 
-        VBox content = new VBox(20);
+        VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("My Meetings");
+        Label title = new Label("📅 My Meetings");
         title.getStyleClass().add("content-title");
 
         TableView<Meeting> meetingsTable = createMyMeetingsTable();
@@ -425,25 +428,26 @@ public class EmployeeDashboardController {
         TableView<Meeting> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("📋 Title");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+        titleCol.setPrefWidth(200);
 
-        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("📅 Date");
         dateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+        dateCol.setPrefWidth(100);
 
-        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("⏰ Time");
         timeCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(
                         cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
+        timeCol.setPrefWidth(120);
 
-        TableColumn<Meeting, String> locationCol = new TableColumn<>("Location");
+        TableColumn<Meeting, String> locationCol = new TableColumn<>("📍 Location");
         locationCol.setCellValueFactory(new PropertyValueFactory<>("lokasi"));
+        locationCol.setPrefWidth(150);
 
-        TableColumn<Meeting, String> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-        table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol, statusCol);
+        table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol);
 
         if (dataStore != null && employee != null) {
             List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(employee.getId());
@@ -461,11 +465,11 @@ public class EmployeeDashboardController {
 
         contentArea.getChildren().clear();
 
-        VBox content = new VBox(20);
+        VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("My Leave Requests");
+        Label title = new Label("🏖️ My Leave Requests");
         title.getStyleClass().add("content-title");
 
         Button newRequestBtn = new Button("➕ New Leave Request");
@@ -482,27 +486,28 @@ public class EmployeeDashboardController {
         TableView<LeaveRequest> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+        typeCol.setPrefWidth(120);
 
-        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start Date");
         startDateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+        startDateCol.setPrefWidth(100);
 
-        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("End Date");
-        endDateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
-
-        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
         daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+        daysCol.setPrefWidth(80);
 
-        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("✅ Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setPrefWidth(100);
 
-        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("Approval Notes");
+        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("📋 Notes");
         notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
+        notesCol.setPrefWidth(200);
 
-        table.getColumns().addAll(typeCol, startDateCol, endDateCol, daysCol, statusCol, notesCol);
+        table.getColumns().addAll(typeCol, startDateCol, daysCol, statusCol, notesCol);
 
         if (dataStore != null && employee != null) {
             List<LeaveRequest> myLeaveRequests = dataStore.getLeaveRequestsByEmployee(employee.getId());
@@ -519,11 +524,12 @@ public class EmployeeDashboardController {
         }
 
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Request Leave");
+        dialog.setTitle("🏖️ Request Leave");
         dialog.setHeaderText("Submit a new leave request");
 
-        VBox content = new VBox(15);
-        content.setPadding(new Insets(20));
+        VBox content = new VBox(18);
+        content.setPadding(new Insets(25));
+        content.getStyleClass().add("kpi-set-form");
 
         ComboBox<String> leaveTypeCombo = new ComboBox<>();
         leaveTypeCombo.getItems().addAll("Annual Leave", "Sick Leave", "Personal Leave", "Emergency Leave");
@@ -532,7 +538,6 @@ public class EmployeeDashboardController {
         DatePicker startDatePicker = new DatePicker();
         DatePicker endDatePicker = new DatePicker();
 
-        // Prevent past dates and weekends
         startDatePicker.setDayCellFactory(picker -> new DateCell() {
             @Override
             public void updateItem(LocalDate date, boolean empty) {
@@ -564,10 +569,10 @@ public class EmployeeDashboardController {
         reasonArea.setPrefRowCount(3);
 
         content.getChildren().addAll(
-                new Label("Leave Type:"), leaveTypeCombo,
-                new Label("Start Date (No weekends):"), startDatePicker,
-                new Label("End Date (No weekends):"), endDatePicker,
-                new Label("Reason:"), reasonArea
+                new Label("📝 Leave Type:"), leaveTypeCombo,
+                new Label("📅 Start Date (No weekends):"), startDatePicker,
+                new Label("📅 End Date (No weekends):"), endDatePicker,
+                new Label("📋 Reason:"), reasonArea
         );
 
         dialog.getDialogPane().setContent(content);
@@ -587,7 +592,6 @@ public class EmployeeDashboardController {
                         return;
                     }
 
-                    // FIX: Use java.util.Date instead of java.sql.Date
                     Date startUtilDate = java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     Date endUtilDate = java.util.Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -596,7 +600,7 @@ public class EmployeeDashboardController {
                                 startUtilDate, endUtilDate, reasonArea.getText());
                         if (success) {
                             showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
-                            showMyLeaveRequests(); // Refresh
+                            showMyLeaveRequests();
                         } else {
                             showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
                         }
@@ -619,17 +623,14 @@ public class EmployeeDashboardController {
 
         contentArea.getChildren().clear();
 
-        VBox content = new VBox(20);
+        VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("My Salary Information");
+        Label title = new Label("💰 My Salary Information");
         title.getStyleClass().add("content-title");
 
-        // Current Salary Breakdown
         VBox currentSalaryBox = createCurrentSalaryBreakdown();
-
-        // Salary History Table
         TableView<SalaryHistory> salaryHistoryTable = createSalaryHistoryTable();
 
         content.getChildren().addAll(title, currentSalaryBox, salaryHistoryTable);
@@ -637,18 +638,17 @@ public class EmployeeDashboardController {
     }
 
     private VBox createCurrentSalaryBreakdown() {
-        VBox salaryBox = new VBox(15);
+        VBox salaryBox = new VBox(18);
         salaryBox.getStyleClass().add("salary-breakdown-box");
-        salaryBox.setPadding(new Insets(20));
+        salaryBox.setPadding(new Insets(25));
 
-        Label breakdownTitle = new Label("Current Month Salary Breakdown");
+        Label breakdownTitle = new Label("💰 Current Month Salary Breakdown");
         breakdownTitle.getStyleClass().add("section-title");
 
         GridPane salaryGrid = new GridPane();
-        salaryGrid.setHgap(20);
-        salaryGrid.setVgap(10);
+        salaryGrid.setHgap(25);
+        salaryGrid.setVgap(12);
 
-        // Calculate current salary
         double baseSalary = employee.getGajiPokok();
         double kpiBonus = calculateKPIBonus(employee.getKpiScore(), baseSalary);
         double supervisorBonus = calculateSupervisorBonus(employee.getSupervisorRating(), baseSalary);
@@ -656,18 +656,18 @@ public class EmployeeDashboardController {
         double totalSalary = baseSalary + kpiBonus + supervisorBonus - penalty;
 
         int row = 0;
-        addSalaryRow(salaryGrid, "Base Salary:", String.format("Rp %,.0f", baseSalary), row++);
-        addSalaryRow(salaryGrid, "KPI Bonus (" + df.format(employee.getKpiScore()) + "%):", String.format("Rp %,.0f", kpiBonus), row++);
-        addSalaryRow(salaryGrid, "Supervisor Bonus (" + df.format(employee.getSupervisorRating()) + "%):", String.format("Rp %,.0f", supervisorBonus), row++);
+        addSalaryRow(salaryGrid, "💼 Base Salary:", String.format("Rp %,.0f", baseSalary), row++);
+        addSalaryRow(salaryGrid, "📈 KPI Bonus (" + df.format(employee.getKpiScore()) + "%):", String.format("Rp %,.0f", kpiBonus), row++);
+        addSalaryRow(salaryGrid, "⭐ Supervisor Bonus (" + df.format(employee.getSupervisorRating()) + "%):", String.format("Rp %,.0f", supervisorBonus), row++);
         if (penalty > 0) {
-            addSalaryRow(salaryGrid, "Performance Penalty:", String.format("- Rp %,.0f", penalty), row++);
+            addSalaryRow(salaryGrid, "⚠️ Performance Penalty:", String.format("- Rp %,.0f", penalty), row++);
         }
 
         Separator separator = new Separator();
         salaryGrid.add(separator, 0, row, 2, 1);
         row++;
 
-        Label totalLabel = new Label("Total Salary:");
+        Label totalLabel = new Label("💰 Total Salary:");
         totalLabel.getStyleClass().add("total-salary");
         Label totalValue = new Label(String.format("Rp %,.0f", totalSalary));
         totalValue.getStyleClass().add("total-salary");
@@ -712,30 +712,26 @@ public class EmployeeDashboardController {
         TableView<SalaryHistory> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("Month");
+        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("📅 Month");
         monthCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+        monthCol.setPrefWidth(100);
 
-        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("Year");
+        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("📅 Year");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+        yearCol.setPrefWidth(80);
 
-        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("💼 Base Salary");
         baseSalaryCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getBaseSalary())));
+        baseSalaryCol.setPrefWidth(120);
 
-        TableColumn<SalaryHistory, String> kpiBonusCol = new TableColumn<>("KPI Bonus");
-        kpiBonusCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getKpiBonus())));
-
-        TableColumn<SalaryHistory, String> supervisorBonusCol = new TableColumn<>("Supervisor Bonus");
-        supervisorBonusCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getSupervisorBonus())));
-
-        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("Total Salary");
+        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("💰 Total Salary");
         totalSalaryCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getTotalSalary())));
+        totalSalaryCol.setPrefWidth(120);
 
-        table.getColumns().addAll(monthCol, yearCol, baseSalaryCol, kpiBonusCol, supervisorBonusCol, totalSalaryCol);
+        table.getColumns().addAll(monthCol, yearCol, baseSalaryCol, totalSalaryCol);
 
         if (dataStore != null && employee != null) {
             List<SalaryHistory> mySalaryHistory = dataStore.getSalaryHistoryByEmployee(employee.getId());
@@ -760,13 +756,14 @@ public class EmployeeDashboardController {
         }
 
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Edit Profile");
+        dialog.setTitle("👤 Edit Profile");
         dialog.setHeaderText("Update your name and password.");
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setHgap(15);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(25, 150, 15, 15));
+        grid.getStyleClass().add("kpi-set-form");
 
         TextField nameField = new TextField();
         nameField.setText(employee.getNama());
@@ -774,13 +771,12 @@ public class EmployeeDashboardController {
         PasswordField passwordField = new PasswordField();
         passwordField.setText(employee.getPassword());
 
-        grid.add(new Label("Name:"), 0, 0);
+        grid.add(new Label("👤 Name:"), 0, 0);
         grid.add(nameField, 1, 0);
-        grid.add(new Label("Password:"), 0, 1);
+        grid.add(new Label("🔒 Password:"), 0, 1);
         grid.add(passwordField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
-
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.showAndWait().ifPresent(result -> {
@@ -791,6 +787,7 @@ public class EmployeeDashboardController {
                     dataStore.updateEmployee(employee);
                     showAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully!");
                     userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
+                    navUserGreeting.setText("Hello, " + employee.getNama() + "!");
                 } catch (Exception e) {
                     showAlert(Alert.AlertType.ERROR, "Error", "Failed to update profile.");
                 }

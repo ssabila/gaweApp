@@ -14,14 +14,11 @@
 <BorderPane fx:id="rootPane" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.ManagerDashboardController">
     <top>
         <HBox alignment="CENTER_LEFT" styleClass="header-box">
-            <padding>
-                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
-            </padding>
             <children>
-                <Label styleClass="header-title" text="GAWE - Manager Dashboard" />
+                <Label styleClass="gawe-logo" text="🏢 GAWE" />
                 <Region HBox.hgrow="ALWAYS" />
                 <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" />
-                <Button onAction="#handleLogout" styleClass="logout-button" text="Logout">
+                <Button onAction="#handleLogout" styleClass="logout-button" text="🚪 Logout">
                     <HBox.margin>
                         <Insets left="20.0" />
                     </HBox.margin>
@@ -35,16 +32,33 @@
                 <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
             </padding>
             <children>
-                <Label styleClass="nav-title" text="Navigation" />
+                <!-- User Info Section -->
+                <VBox alignment="CENTER" styleClass="user-info-section">
+                    <children>
+                        <Label styleClass="user-avatar" text="👔" />
+                        <Label fx:id="navUserGreeting" styleClass="user-greeting" text="Hello, Manager!" />
+                        <Label styleClass="user-role" text="Manager Dashboard" />
+                    </children>
+                </VBox>
+
+                <Label styleClass="nav-title" text="🎯 Management Tools">
+                    <VBox.margin>
+                        <Insets top="20.0" />
+                    </VBox.margin>
+                </Label>
                 <Separator styleClass="nav-separator" />
-                <VBox fx:id="navButtonContainer" spacing="5.0" />
+                <VBox fx:id="navButtonContainer" spacing="8.0">
+                    <VBox.margin>
+                        <Insets top="10.0" />
+                    </VBox.margin>
+                </VBox>
             </children>
         </VBox>
     </left>
     <center>
         <StackPane fx:id="contentArea" styleClass="content-area">
             <padding>
-                <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                <Insets top="30.0" right="30.0" bottom="30.0" left="30.0" />
             </padding>
         </StackPane>
     </center>
