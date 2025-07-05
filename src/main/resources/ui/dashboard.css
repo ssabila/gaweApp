@@ -1,519 +1,689 @@
-/* Modern Dashboard CSS with Gradients and Enhanced Styling */
+/* Modern GAWE Dashboard CSS with Custom Color Palette */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=The+Seasons:wght@400;700&display=swap");
 
 /* Root styling */
-.root {
-    -fx-font-family: "Segoe UI", "SF Pro Display", Arial, sans-serif;
-    -fx-font-size: 13px;
-    -fx-background-color: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+:root {
+    -fx-font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
 }
 
-/* Header styling with modern gradient */
+/* Header styling */
 .header-box {
-    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 12, 0, 0, 4);
-    -fx-padding: 15 25 15 25;
+    -fx-background-color: #216163;
+    -fx-padding: 16 24 16 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
 }
 
 .header-title {
-    -fx-font-size: 22px;
+    -fx-font-family: "The Seasons", serif;
+    -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 2, 0, 0, 1);
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
 }
 
 .user-welcome-label {
-    -fx-font-size: 15px;
-    -fx-text-fill: rgba(255, 255, 255, 0.95);
+    -fx-font-size: 16px;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
     -fx-font-weight: 500;
 }
 
 .logout-button {
-    -fx-background-color: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 25;
-    -fx-padding: 10 20 10 20;
-    -fx-font-weight: bold;
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 8;
+    -fx-padding: 10 16 10 16;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 6, 0, 0, 2);
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
 
 .logout-button:hover {
-    -fx-background-color: linear-gradient(135deg, #ff5252 0%, #d63031 100%);
-    -fx-scale-x: 1.05;
-    -fx-scale-y: 1.05;
-}
-
-/* Navigation sidebar with modern gradient */
-.navigation-sidebar {
-    -fx-background-color: linear-gradient(180deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
-    -fx-min-width: 280px;
-    -fx-max-width: 280px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 8, 0, 2, 0);
-}
-
-/* User info section at top of navigation */
-.user-info-section {
-    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-background-radius: 15;
-    -fx-padding: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 2);
-    -fx-spacing: 10;
-}
-
-.user-avatar {
-    -fx-font-size: 32px;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 4, 0, 0, 1);
-}
-
-.user-greeting {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 2, 0, 0, 1);
-}
-
-.user-role {
-    -fx-font-size: 13px;
-    -fx-text-fill: rgba(255, 255, 255, 0.9);
-}
-
-.nav-title {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #ecf0f1;
-    -fx-padding: 15 0 10 0;
-}
-
-.nav-separator {
-    -fx-background-color: linear-gradient(90deg, transparent 0%, #4facfe 50%, transparent 100%);
-    -fx-pref-height: 2;
-}
-
-.nav-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #ecf0f1;
-    -fx-padding: 15 20 15 20;
-    -fx-background-radius: 12;
-    -fx-font-size: 14px;
-    -fx-cursor: hand;
-    -fx-alignment: center-left;
-    -fx-font-weight: 500;
-}
-
-.nav-button:hover {
-    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 6, 0, 0, 2);
+    -fx-background-color: #b5f3ee;
+    -fx-text-fill: #216163;
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
 }
 
-.nav-button:pressed {
-    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Navigation sidebar */
+.sidebar {
+    -fx-background-color: #216163;
+    -fx-min-width: 280px;
+    -fx-max-width: 280px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 6, 0, 2, 0);
 }
 
-/* Content area with subtle gradient */
+.sidebar-header {
+    -fx-background-color: #1a4d4f;
+    -fx-padding: 20;
+    -fx-alignment: center;
+}
+
+.sidebar-title {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+}
+
+.sidebar-subtitle {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #b5f3ee;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 15 20;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+.nav-button:hover {
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+}
+
+.nav-button.active {
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-border-color: #b5f3ee;
+    -fx-border-width: 0 0 0 4;
+}
+
+.nav-separator {
+    -fx-background-color: #2b7583;
+    -fx-pref-height: 1;
+}
+
+/* Content area */
 .content-area {
-    -fx-background-color: linear-gradient(135deg, #ffecd2 0%, #fcb69f 20%, #ffffff 100%);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-padding: 30;
 }
 
 .dashboard-content-container {
     -fx-background-color: transparent;
-    -fx-padding: 30;
+    -fx-padding: 24;
+    -fx-spacing: 24;
 }
 
 .content-title {
+    -fx-font-family: "The Seasons", serif;
     -fx-font-size: 32px;
     -fx-font-weight: bold;
-    -fx-text-fill: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -fx-padding: 0 0 30 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+    -fx-text-fill: #216163;
+    -fx-padding: 0 0 24 0;
 }
 
-/* Quick actions with glassmorphism effect */
+.page-title {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 28px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #216163;
+}
+
+.page-subtitle {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #2b7583;
+}
+
+/* Quick actions */
 .quick-actions-box {
-    -fx-background-color: rgba(255, 255, 255, 0.25);
-    -fx-padding: 25;
-    -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 15, 0, 0, 5);
-    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-padding: 20;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #b5f3ee;
     -fx-border-width: 1;
-    -fx-border-radius: 20;
+    -fx-border-radius: 12;
+    -fx-spacing: 16;
 }
 
-/* Modern action buttons with gradients */
+/* Action buttons */
 .action-button-green {
-    -fx-background-color: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 25;
-    -fx-padding: 12 25 12 25;
-    -fx-font-weight: bold;
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 8;
+    -fx-padding: 12 20 12 20;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 3);
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
 
 .action-button-green:hover {
-    -fx-background-color: linear-gradient(135deg, #4a934a 0%, #98d982 100%);
+    -fx-background-color: #216163;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
 }
 
 .action-button-red {
-    -fx-background-color: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 25;
-    -fx-padding: 12 25 12 25;
-    -fx-font-weight: bold;
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 8;
+    -fx-padding: 12 20 12 20;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 3);
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
 
 .action-button-red:hover {
-    -fx-background-color: linear-gradient(135deg, #e73c5e 0%, #e73827 100%);
+    -fx-background-color: #2b7583;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
 }
 
 .action-button-orange {
-    -fx-background-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 25;
-    -fx-padding: 12 25 12 25;
-    -fx-font-weight: bold;
+    -fx-background-color: #b5f3ee;
+    -fx-text-fill: #216163;
+    -fx-background-radius: 8;
+    -fx-padding: 12 20 12 20;
+    -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 3);
+    -fx-border-color: #2b7583;
+    -fx-border-width: 1;
 }
 
 .action-button-orange:hover {
-    -fx-background-color: linear-gradient(135deg, #d685e8 0%, #d1455b 100%);
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
 }
 
 .action-button-small-green {
-    -fx-background-color: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 15;
-    -fx-padding: 8 15 8 15;
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 6;
+    -fx-padding: 8 12 8 12;
     -fx-font-size: 12px;
     -fx-cursor: hand;
     -fx-font-weight: 600;
+}
+
+.action-button-small-green:hover {
+    -fx-background-color: #216163;
 }
 
 .action-button-small-red {
-    -fx-background-color: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 15;
-    -fx-padding: 8 15 8 15;
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 6;
+    -fx-padding: 8 12 8 12;
     -fx-font-size: 12px;
     -fx-cursor: hand;
     -fx-font-weight: 600;
+}
+
+.action-button-small-red:hover {
+    -fx-background-color: #2b7583;
 }
 
 .review-button {
-    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-text-fill: white;
-    -fx-background-radius: 15;
-    -fx-padding: 8 15 8 15;
+    -fx-background-color: #b5f3ee;
+    -fx-text-fill: #216163;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12 8 12;
     -fx-font-size: 12px;
     -fx-cursor: hand;
     -fx-font-weight: 600;
+    -fx-border-color: #2b7583;
+    -fx-border-width: 1;
 }
 
 .review-button:hover {
-    -fx-background-color: linear-gradient(135deg, #429cf4 0%, #00d4ea 100%);
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
 }
 
-/* Enhanced stats cards with glassmorphism */
+/* Stats cards */
 .stats-cards-container {
     -fx-background-color: transparent;
-    -fx-padding: 25;
-    -fx-spacing: 20;
+    -fx-spacing: 16;
 }
 
 .stats-card {
-    -fx-background-color: rgba(255, 255, 255, 0.8);
-    -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 15, 0, 0, 5);
-    -fx-padding: 25;
-    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-border-color: rgba(181, 243, 238, 0.3);
     -fx-border-width: 1;
-    -fx-border-radius: 20;
-    -fx-pref-width: 220;
-    -fx-pref-height: 140;
+    -fx-border-radius: 12;
 }
 
 .stats-card:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-background-color: rgba(181, 243, 238, 0.2);
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 12, 0, 0, 4);
 }
 
-.stats-card-icon {
-    -fx-font-size: 36px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 1);
-}
-
-.stats-card-value {
+.stats-number {
+    -fx-font-family: "Poppins";
     -fx-font-size: 32px;
-    -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+    -fx-font-weight: 700;
+    -fx-text-fill: #216163;
 }
 
-.stats-card-title {
-    -fx-font-size: 13px;
-    -fx-text-fill: #7f8c8d;
+.stats-label {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
     -fx-font-weight: 500;
+    -fx-text-fill: #2b7583;
 }
 
-/* Recent activities section with modern styling */
+.stats-icon {
+    -fx-font-size: 24px;
+}
+
+/* Recent activities section */
 .recent-activities-section {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 15, 0, 0, 5);
-    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #b5f3ee;
     -fx-border-width: 1;
-    -fx-border-radius: 20;
+    -fx-border-radius: 12;
 }
 
 .section-title {
+    -fx-font-family: "The Seasons", serif;
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: #2c3e50;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+    -fx-text-fill: #216163;
 }
 
 .activities-list {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-background-radius: 15;
+    -fx-background-radius: 8;
 }
 
-/* Modern data tables */
-.data-table {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
-    -fx-border-color: rgba(79, 172, 254, 0.3);
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 3);
-}
-
-.data-table .column-header-background {
-    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -fx-background-radius: 15 15 0 0;
-}
-
-.data-table .column-header {
+.activities-list .list-cell {
     -fx-background-color: transparent;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-padding: 15;
+    -fx-padding: 8;
     -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 2, 0, 0, 1);
+    -fx-text-fill: #216163;
 }
 
-.data-table .table-row-cell {
-    -fx-background-color: rgba(255, 255, 255, 0.8);
-    -fx-border-color: rgba(79, 172, 254, 0.1);
+.activities-list .list-cell:hover {
+    -fx-background-color: #b5f3ee;
+    -fx-background-radius: 6;
 }
 
-.data-table .table-row-cell:hover {
-    -fx-background-color: rgba(79, 172, 254, 0.1);
-}
-
-.data-table .table-row-cell:selected {
-    -fx-background-color: linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.3) 100%);
-}
-
-.data-table .table-cell {
-    -fx-padding: 12;
-    -fx-alignment: center-left;
-    -fx-font-size: 13px;
-}
-
-/* Modern forms with glassmorphism */
-.kpi-set-form {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-background-radius: 25;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 20, 0, 0, 8);
-    -fx-border-color: rgba(255, 255, 255, 0.3);
+/* Data tables */
+.table-view {
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-border-color: rgba(181, 243, 238, 0.5);
     -fx-border-width: 1;
-    -fx-border-radius: 25;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #216163;
+    -fx-background-radius: 8 8 0 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-font-family: "Poppins";
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-padding: 12;
+}
+
+.table-view .table-cell {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 12px;
+    -fx-text-fill: #216163;
+    -fx-padding: 10;
+    -fx-border-color: rgba(181, 243, 238, 0.3);
+}
+
+.table-row-cell:hover {
+    -fx-background-color: rgba(181, 243, 238, 0.1);
+}
+
+.table-row-cell:selected {
+    -fx-background-color: rgba(43, 117, 131, 0.2);
+}
+
+/* Forms */
+.form-container {
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 12;
+    -fx-padding: 25;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
+    -fx-border-color: rgba(181, 243, 238, 0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
 }
 
 .form-title {
+    -fx-font-family: "The Seasons", serif;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-text-fill: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+    -fx-text-fill: #216163;
+}
+
+.form-label {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #216163;
 }
 
 .text-field,
-.password-field {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-border-color: rgba(79, 172, 254, 0.5);
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
-    -fx-padding: 12;
-    -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
+.text-area,
+.combo-box,
+.date-picker {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 13px;
+    -fx-text-fill: #216163;
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-border-color: #b5f3ee;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10;
 }
 
 .text-field:focused,
-.password-field:focused {
-    -fx-border-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-border-width: 2;
-    -fx-effect: dropshadow(gaussian, rgba(79, 172, 254, 0.3), 8, 0, 0, 3);
+.text-area:focused,
+.combo-box:focused,
+.date-picker:focused {
+    -fx-border-color: #2b7583;
+    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.3), 4, 0, 0, 0);
 }
 
-.combo-box {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-border-color: rgba(79, 172, 254, 0.5);
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
-}
-
-.date-picker {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-border-color: rgba(79, 172, 254, 0.5);
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
-}
-
-/* Modern tab pane */
-.custom-tab-pane {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 15, 0, 0, 5);
-}
-
-.custom-tab-pane .tab-header-area {
-    -fx-background-color: transparent;
-}
-
-.custom-tab-pane .tab {
-    -fx-background-color: rgba(189, 195, 199, 0.7);
-    -fx-text-fill: #2c3e50;
-    -fx-background-radius: 15 15 0 0;
-    -fx-padding: 12 20 12 20;
+/* Buttons */
+.primary-button {
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-font-family: "Poppins";
     -fx-font-weight: 600;
+    -fx-font-size: 14px;
+    -fx-padding: 12 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 6, 0, 0, 2);
 }
 
-.custom-tab-pane .tab:selected {
-    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0, 0, 2);
+.primary-button:hover {
+    -fx-background-color: #2b7583;
+    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.4), 8, 0, 0, 3);
 }
 
-/* Enhanced salary styling */
-.salary-breakdown-box {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
-    -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 15, 0, 0, 5);
-    -fx-border-color: rgba(255, 255, 255, 0.3);
-    -fx-border-width: 1;
-    -fx-border-radius: 20;
-}
-
-.total-salary {
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-    -fx-text-fill: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
-}
-
-/* Modern slider styling */
-.slider {
+.secondary-button {
     -fx-background-color: transparent;
+    -fx-text-fill: #216163;
+    -fx-font-family: "Poppins";
+    -fx-font-weight: 500;
+    -fx-font-size: 14px;
+    -fx-padding: 12 20;
+    -fx-background-radius: 8;
+    -fx-border-color: #216163;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
 }
 
+.secondary-button:hover {
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+}
+
+.danger-button {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-font-family: "Poppins";
+    -fx-font-weight: 600;
+    -fx-font-size: 14px;
+    -fx-padding: 12 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.danger-button:hover {
+    -fx-background-color: #c82333;
+}
+
+/* Welcome Section */
+.welcome-section {
+    -fx-background-color: linear-gradient(135deg, #216163 0%, #2b7583 100%);
+    -fx-background-radius: 12;
+    -fx-padding: 25;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 10, 0, 0, 4);
+}
+
+.welcome-title {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+}
+
+.welcome-subtitle {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #b5f3ee;
+}
+
+/* Slider styling */
 .slider .track {
-    -fx-background-color: linear-gradient(90deg, #ecf0f1 0%, #bdc3c7 100%);
-    -fx-background-radius: 10;
-    -fx-pref-height: 8;
+    -fx-background-color: #b5f3ee;
+    -fx-background-radius: 4;
+    -fx-pref-height: 6;
 }
 
 .slider .thumb {
-    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -fx-background-radius: 15;
-    -fx-pref-width: 20;
-    -fx-pref-height: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 6, 0, 0, 2);
+    -fx-background-color: #2b7583;
+    -fx-background-radius: 10;
+    -fx-pref-width: 16;
+    -fx-pref-height: 16;
 }
 
-/* Modern text area */
+/* Text area */
 .text-area {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
-    -fx-border-color: rgba(79, 172, 254, 0.5);
-    -fx-border-radius: 15;
-    -fx-background-radius: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-border-color: #b5f3ee;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-text-fill: #216163;
 }
 
 .text-area:focused {
-    -fx-border-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -fx-border-color: #2b7583;
     -fx-border-width: 2;
 }
 
-/* Modern list view */
+/* List view */
 .list-view {
-    -fx-background-color: rgba(255, 255, 255, 0.9);
-    -fx-border-color: transparent;
-    -fx-background-radius: 15;
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-border-color: #b5f3ee;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
 }
 
 .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 12;
+    -fx-padding: 10;
     -fx-font-size: 14px;
+    -fx-text-fill: #216163;
 }
 
 .list-cell:hover {
-    -fx-background-color: rgba(79, 172, 254, 0.1);
-    -fx-background-radius: 10;
+    -fx-background-color: #b5f3ee;
+    -fx-background-radius: 6;
 }
 
 .list-cell:selected {
-    -fx-background-color: linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.3) 100%);
-    -fx-background-radius: 10;
+    -fx-background-color: #2b7583;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 6;
 }
 
-/* Modern separator */
+/* Separator */
 .separator {
-    -fx-background-color: linear-gradient(90deg, transparent 0%, #4facfe 50%, transparent 100%);
-    -fx-pref-height: 2;
-}
-
-/* Animation classes */
-.fade-in {
-    -fx-opacity: 0;
-}
-
-.scale-on-hover:hover {
-    -fx-scale-x: 1.05;
-    -fx-scale-y: 1.05;
+    -fx-background-color: #b5f3ee;
+    -fx-pref-height: 1;
 }
 
 /* Logo styling */
 .gawe-logo {
+    -fx-font-family: "The Seasons", serif;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 3, 0, 0, 1);
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
 }
 
 /* Dialog styling */
 .dialog-pane {
-    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 16, 0, 0, 8);
+    -fx-border-color: #b5f3ee;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+}
+
+/* Login specific styles */
+.login-container {
+    -fx-background-color: #ffffff; /* Fixed Invalid color */
     -fx-background-radius: 20;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 20, 0, 0, 8);
-    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.15), 20, 0, 0, 8);
+    -fx-border-color: rgba(181, 243, 238, 0.5);
     -fx-border-width: 1;
     -fx-border-radius: 20;
+}
+
+.login-title {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 36px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #216163;
+}
+
+.login-subtitle {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #2b7583;
+}
+
+.login-status {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 13px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #216163;
+}
+
+.login-button {
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff; /* Fixed Invalid color */
+    -fx-padding: 16;
+    -fx-background-radius: 12;
+    -fx-font-family: "Poppins";
+    -fx-font-weight: 600;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 6, 0, 0, 2);
+}
+
+.login-button:hover {
+    -fx-background-color: #2b7583;
+    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.4), 8, 0, 0, 3);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.login-button:pressed {
+    -fx-background-color: #1a4d4f;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.password-toggle-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-background-radius: 6;
+}
+
+.password-toggle-button:hover {
+    -fx-background-color: rgba(181, 243, 238, 0.3);
+}
+
+.demo-credentials {
+    -fx-background-color: rgba(181, 243, 238, 0.2);
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+    -fx-border-color: rgba(181, 243, 238, 0.5);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.demo-title {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #216163;
+}
+
+.demo-text {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #2b7583;
+}
+
+/* Responsive adjustments for 14-inch laptops */
+@media screen and (max-width: 1366px) {
+    .content-title {
+        -fx-font-size: 28px;
+    }
+
+    .stats-card {
+        -fx-min-width: 200;
+        -fx-pref-width: 220;
+    }
+
+    .stats-number {
+        -fx-font-size: 28px;
+    }
+}
+
+@media screen and (max-width: 1280px) {
+    .content-area {
+        -fx-padding: 20;
+    }
+
+    .form-container {
+        -fx-padding: 20;
+    }
+
+    .stats-card {
+        -fx-min-width: 180;
+        -fx-pref-width: 200;
+    }
 }

@@ -4,18 +4,28 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
 <BorderPane fx:id="rootPane" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.ManagerDashboardController">
     <top>
         <HBox alignment="CENTER_LEFT" styleClass="header-box">
             <children>
-                <Label styleClass="gawe-logo" text="🏢 GAWE" />
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <children>
+                        <ImageView fitHeight="32.0" fitWidth="32.0" preserveRatio="true">
+                            <image>
+                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe_logo-Kf7kejqXZMI0fMKQdGZnMkXcD9BvU4.png" />
+                            </image>
+                        </ImageView>
+                        <Label styleClass="gawe-logo" text="GAWE" />
+                    </children>
+                </HBox>
                 <Region HBox.hgrow="ALWAYS" />
                 <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" />
                 <Button onAction="#handleLogout" styleClass="logout-button" text="🚪 Logout">
@@ -47,9 +57,9 @@
                     </VBox.margin>
                 </Label>
                 <Separator styleClass="nav-separator" />
-                <VBox fx:id="navButtonContainer" spacing="8.0">
+                <VBox fx:id="navButtonContainer" spacing="6.0">
                     <VBox.margin>
-                        <Insets top="10.0" />
+                        <Insets top="12.0" />
                     </VBox.margin>
                 </VBox>
             </children>
@@ -58,7 +68,7 @@
     <center>
         <StackPane fx:id="contentArea" styleClass="content-area">
             <padding>
-                <Insets top="30.0" right="30.0" bottom="30.0" left="30.0" />
+                <Insets top="24.0" right="24.0" bottom="24.0" left="24.0" />
             </padding>
         </StackPane>
     </center>

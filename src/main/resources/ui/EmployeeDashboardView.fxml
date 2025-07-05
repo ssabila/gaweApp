@@ -1,59 +1,347 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane fx:id="rootPane" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.EmployeeDashboardController">
-    <top>
-        <HBox alignment="CENTER_LEFT" styleClass="header-box">
-            <children>
-                <Label styleClass="gawe-logo" text="🏢 GAWE" />
-                <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" />
-                <Button onAction="#handleLogout" styleClass="logout-button" text="🚪 Logout">
-                    <HBox.margin>
-                        <Insets left="20.0" />
-                    </HBox.margin>
-                </Button>
-            </children>
-        </HBox>
-    </top>
+<BorderPane styleClass="dashboard-container" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.EmployeeDashboardController">
     <left>
-        <VBox styleClass="navigation-sidebar">
-            <padding>
-                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-            </padding>
+        <VBox styleClass="sidebar" prefWidth="280.0">
             <children>
-                <!-- User Info Section -->
-                <VBox alignment="CENTER" styleClass="user-info-section">
+                <!-- Sidebar Header -->
+                <VBox styleClass="sidebar-header" spacing="8.0">
                     <children>
-                        <Label styleClass="user-avatar" text="👤" />
-                        <Label fx:id="navUserGreeting" styleClass="user-greeting" text="Hello, Employee!" />
-                        <Label styleClass="user-role" text="Employee Dashboard" />
+                        <ImageView fitHeight="40.0" fitWidth="40.0" preserveRatio="true">
+                            <image>
+                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe_logo-Kf7kejqXZMI0fMKQdGZnMkXcD9BvU4.png" />
+                            </image>
+                        </ImageView>
+                        <Label styleClass="sidebar-title" text="GAWE" />
+                        <Label styleClass="sidebar-subtitle" text="Employee Dashboard" />
                     </children>
                 </VBox>
 
-                <Label styleClass="nav-title" text="📋 Navigation">
-                    <VBox.margin>
+                <!-- Navigation Menu -->
+                <VBox spacing="2.0">
+                    <children>
+                        <Button fx:id="dashboardBtn" onAction="#showDashboard" styleClass="nav-button" text="📊 Dashboard" />
+                        <Button fx:id="attendanceBtn" onAction="#showAttendance" styleClass="nav-button" text="⏰ Attendance" />
+                        <Button fx:id="leaveBtn" onAction="#showLeaveRequests" styleClass="nav-button" text="🏖️ Leave Requests" />
+                        <Button fx:id="meetingsBtn" onAction="#showMeetings" styleClass="nav-button" text="📅 Meetings" />
+                        <Button fx:id="profileBtn" onAction="#showProfile" styleClass="nav-button" text="👤 Profile" />
+                        <Button fx:id="logoutBtn" onAction="#handleLogout" styleClass="nav-button" text="🚪 Logout" />
+                    </children>
+                    <padding>
                         <Insets top="20.0" />
-                    </VBox.margin>
-                </Label>
-                <Separator styleClass="nav-separator" />
-                <VBox fx:id="navButtonContainer" spacing="8.0">
-                    <VBox.margin>
-                        <Insets top="10.0" />
-                    </VBox.margin>
+                    </padding>
                 </VBox>
             </children>
         </VBox>
     </left>
+
     <center>
-        <StackPane fx:id="contentArea" styleClass="content-area">
-            <padding>
-                <Insets top="30.0" left="30.0" right="30.0" bottom="30.0" />
-            </padding>
-        </StackPane>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <content>
+                <VBox fx:id="contentArea" styleClass="content-area" spacing="25.0">
+
+                    <!-- Dashboard Content -->
+                    <VBox fx:id="dashboardContent" spacing="25.0">
+                        <!-- Welcome Section -->
+                        <VBox styleClass="welcome-section" spacing="10.0">
+                            <children>
+                                <Label fx:id="welcomeLabel" styleClass="welcome-title" text="Welcome back!" />
+                                <Label fx:id="employeeInfoLabel" styleClass="welcome-subtitle" text="Employee Dashboard" />
+                            </children>
+                        </VBox>
+
+                        <!-- Statistics Cards -->
+                        <HBox spacing="20.0">
+                            <children>
+                                <VBox styleClass="stats-card" spacing="10.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                            <children>
+                                                <Label styleClass="stats-icon" text="⏰" />
+                                                <VBox>
+                                                    <children>
+                                                        <Label fx:id="attendanceCountLabel" styleClass="stats-number" text="0" />
+                                                        <Label styleClass="stats-label" text="Days Present" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <VBox styleClass="stats-card" spacing="10.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                            <children>
+                                                <Label styleClass="stats-icon" text="🏖️" />
+                                                <VBox>
+                                                    <children>
+                                                        <Label fx:id="leaveCountLabel" styleClass="stats-number" text="0" />
+                                                        <Label styleClass="stats-label" text="Leave Requests" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <VBox styleClass="stats-card" spacing="10.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                            <children>
+                                                <Label styleClass="stats-icon" text="📅" />
+                                                <VBox>
+                                                    <children>
+                                                        <Label fx:id="meetingCountLabel" styleClass="stats-number" text="0" />
+                                                        <Label styleClass="stats-label" text="Meetings" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Attendance Content -->
+                    <VBox fx:id="attendanceContent" spacing="20.0" visible="false">
+                        <children>
+                            <Label styleClass="page-title" text="Attendance Management" />
+                            <Label styleClass="page-subtitle" text="Track your daily attendance" />
+
+                            <!-- Clock In/Out Section -->
+                            <VBox styleClass="form-container" spacing="20.0">
+                                <children>
+                                    <Label styleClass="form-label" text="Clock In/Out" />
+                                    <HBox spacing="15.0">
+                                        <children>
+                                            <Button fx:id="clockInBtn" onAction="#handleClockIn" styleClass="primary-button" text="🕐 Clock In" />
+                                            <Button fx:id="clockOutBtn" onAction="#handleClockOut" styleClass="secondary-button" text="🕐 Clock Out" />
+                                            <Label fx:id="currentTimeLabel" style="-fx-font-family: 'Poppins'; -fx-font-size: 16px; -fx-text-fill: #216163;" text="Current Time: --:--" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </VBox>
+
+                            <!-- Attendance History -->
+                            <VBox spacing="15.0">
+                                <children>
+                                    <Label styleClass="form-label" text="Attendance History" />
+                                    <TableView fx:id="attendanceTable" prefHeight="300.0">
+                                        <columns>
+                                            <TableColumn fx:id="attendanceDateColumn" prefWidth="120.0" text="Date" />
+                                            <TableColumn fx:id="clockInColumn" prefWidth="120.0" text="Clock In" />
+                                            <TableColumn fx:id="clockOutColumn" prefWidth="120.0" text="Clock Out" />
+                                            <TableColumn fx:id="hoursWorkedColumn" prefWidth="120.0" text="Hours Worked" />
+                                            <TableColumn fx:id="statusColumn" prefWidth="100.0" text="Status" />
+                                        </columns>
+                                    </TableView>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Leave Requests Content -->
+                    <VBox fx:id="leaveContent" spacing="20.0" visible="false">
+                        <children>
+                            <Label styleClass="page-title" text="Leave Requests" />
+                            <Label styleClass="page-subtitle" text="Submit and track your leave requests" />
+
+                            <!-- New Leave Request Form -->
+                            <VBox styleClass="form-container" spacing="20.0">
+                                <children>
+                                    <Label styleClass="form-label" text="Submit New Leave Request" />
+                                    <GridPane hgap="15.0" vgap="15.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                        </columnConstraints>
+                                        <rowConstraints>
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        </rowConstraints>
+                                        <children>
+                                            <VBox spacing="5.0">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Leave Type" />
+                                                    <ComboBox fx:id="leaveTypeCombo" prefWidth="200.0" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Start Date" />
+                                                    <DatePicker fx:id="startDatePicker" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.rowIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="End Date" />
+                                                    <DatePicker fx:id="endDatePicker" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Days" />
+                                                    <TextField fx:id="daysField" editable="false" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Reason" />
+                                                    <TextArea fx:id="reasonArea" prefRowCount="3" />
+                                                </children>
+                                            </VBox>
+                                        </children>
+                                    </GridPane>
+                                    <HBox spacing="10.0">
+                                        <children>
+                                            <Button fx:id="submitLeaveBtn" onAction="#handleSubmitLeave" styleClass="primary-button" text="📝 Submit Request" />
+                                            <Button fx:id="clearLeaveBtn" onAction="#handleClearLeave" styleClass="secondary-button" text="🗑️ Clear" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </VBox>
+
+                            <!-- Leave Requests History -->
+                            <VBox spacing="15.0">
+                                <children>
+                                    <Label styleClass="form-label" text="Leave Requests History" />
+                                    <TableView fx:id="leaveTable" prefHeight="300.0">
+                                        <columns>
+                                            <TableColumn fx:id="leaveTypeColumn" prefWidth="100.0" text="Type" />
+                                            <TableColumn fx:id="leaveStartDateColumn" prefWidth="100.0" text="Start Date" />
+                                            <TableColumn fx:id="leaveEndDateColumn" prefWidth="100.0" text="End Date" />
+                                            <TableColumn fx:id="leaveDaysColumn" prefWidth="80.0" text="Days" />
+                                            <TableColumn fx:id="leaveStatusColumn" prefWidth="100.0" text="Status" />
+                                            <TableColumn fx:id="leaveReasonColumn" prefWidth="200.0" text="Reason" />
+                                        </columns>
+                                    </TableView>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Meetings Content -->
+                    <VBox fx:id="meetingsContent" spacing="20.0" visible="false">
+                        <children>
+                            <Label styleClass="page-title" text="Meetings" />
+                            <Label styleClass="page-subtitle" text="View your scheduled meetings" />
+
+                            <VBox spacing="15.0">
+                                <children>
+                                    <Label styleClass="form-label" text="Upcoming Meetings" />
+                                    <TableView fx:id="meetingsTable" prefHeight="400.0">
+                                        <columns>
+                                            <TableColumn fx:id="meetingTitleColumn" prefWidth="200.0" text="Title" />
+                                            <TableColumn fx:id="meetingDateColumn" prefWidth="120.0" text="Date" />
+                                            <TableColumn fx:id="meetingTimeColumn" prefWidth="100.0" text="Time" />
+                                            <TableColumn fx:id="meetingLocationColumn" prefWidth="150.0" text="Location" />
+                                            <TableColumn fx:id="meetingOrganizerColumn" prefWidth="150.0" text="Organizer" />
+                                        </columns>
+                                    </TableView>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Profile Content -->
+                    <VBox fx:id="profileContent" spacing="20.0" visible="false">
+                        <children>
+                            <Label styleClass="page-title" text="Profile" />
+                            <Label styleClass="page-subtitle" text="View and update your profile information" />
+
+                            <VBox styleClass="form-container" spacing="20.0">
+                                <children>
+                                    <GridPane hgap="20.0" vgap="15.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                        </columnConstraints>
+                                        <rowConstraints>
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        </rowConstraints>
+                                        <children>
+                                            <VBox spacing="5.0">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Employee ID" />
+                                                    <TextField fx:id="profileIdField" editable="false" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Full Name" />
+                                                    <TextField fx:id="profileNameField" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.rowIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Email" />
+                                                    <TextField fx:id="profileEmailField" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Phone" />
+                                                    <TextField fx:id="profilePhoneField" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.rowIndex="2">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Department" />
+                                                    <TextField fx:id="profileDepartmentField" editable="false" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Position" />
+                                                    <TextField fx:id="profilePositionField" editable="false" />
+                                                </children>
+                                            </VBox>
+                                            <VBox spacing="5.0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+                                                <children>
+                                                    <Label styleClass="form-label" text="Address" />
+                                                    <TextArea fx:id="profileAddressArea" prefRowCount="2" />
+                                                </children>
+                                            </VBox>
+                                        </children>
+                                    </GridPane>
+                                    <HBox spacing="10.0">
+                                        <children>
+                                            <Button fx:id="updateProfileBtn" onAction="#handleUpdateProfile" styleClass="primary-button" text="💾 Update Profile" />
+                                            <Button fx:id="changePasswordBtn" onAction="#handleChangePassword" styleClass="secondary-button" text="🔐 Change Password" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                </VBox>
+            </content>
+        </ScrollPane>
     </center>
 </BorderPane>
