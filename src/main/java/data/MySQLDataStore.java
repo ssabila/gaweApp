@@ -345,15 +345,15 @@ public class MySQLDataStore implements IDataStore {
     }
 
     @Override
-    public boolean saveReport(String supervisorId, String divisi, int bulan, int tahun, String filePath) {
-        String query = "INSERT INTO reports (supervisor_id, divisi, bulan, tahun, file_path, upload_date, status) VALUES (?, ?, ?, ?, ?, NOW(), 'pending')";
+    public boolean saveReport(String supervisorId, String divisi, int bulan, int tahun, String content) {
+        String query = "INSERT INTO reports (supervisor_id, divisi, bulan, tahun, content, upload_date, status) VALUES (?, ?, ?, ?, ?, NOW(), 'pending')";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, supervisorId);
             pstmt.setString(2, divisi);
             pstmt.setInt(3, bulan);
             pstmt.setInt(4, tahun);
-            pstmt.setString(5, filePath);
+            pstmt.setString(5, content);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             logger.severe("Error saving report: " + e.getMessage());
@@ -1031,7 +1031,7 @@ public class MySQLDataStore implements IDataStore {
         report.setDivisi(rs.getString("divisi"));
         report.setBulan(rs.getInt("bulan"));
         report.setTahun(rs.getInt("tahun"));
-        report.setFilePath(rs.getString("file_path"));
+        report.setContent(rs.getString("content"));
         report.setUploadDate(rs.getTimestamp("upload_date"));
         report.setStatus(rs.getString("status"));
         report.setManagerNotes(rs.getString("manager_notes"));

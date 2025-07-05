@@ -1256,24 +1256,9 @@ public class SupervisorDashboardController {
         }
         yearCombo.setValue(LocalDate.now().getYear());
 
-        TextField filePathField = new TextField();
-        filePathField.setPromptText("Select report file...");
-        filePathField.setEditable(false);
-
-        Button browseBtn = new Button("Browse");
-        browseBtn.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Select Report File");
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf"),
-                    new FileChooser.ExtensionFilter("Word Files", "*.docx", "*.doc"),
-                    new FileChooser.ExtensionFilter("All Files", "*.*")
-            );
-            File selectedFile = fileChooser.showOpenDialog(stage);
-            if (selectedFile != null) {
-                filePathField.setText(selectedFile.getAbsolutePath());
-            }
-        });
+        TextArea reportContentArea = new TextArea();
+        reportContentArea.setPromptText("Write your report content here...");
+        reportContentArea.setPrefRowCount(15);
 
         int row = 0;
         formGrid.add(new Label("Division:"), 0, row);
@@ -1282,16 +1267,14 @@ public class SupervisorDashboardController {
         formGrid.add(monthCombo, 1, row++);
         formGrid.add(new Label("Year:"), 0, row);
         formGrid.add(yearCombo, 1, row++);
-        formGrid.add(new Label("Report File:"), 0, row);
-        HBox fileBox = new HBox(10, filePathField, browseBtn);
-        filePathField.setPrefWidth(300);
-        formGrid.add(fileBox, 1, row);
+        formGrid.add(new Label("Report Content:"), 0, row);
+        formGrid.add(reportContentArea, 1, row, 2, 1);
 
-        Button uploadBtn = new Button("Upload Report");
+        Button uploadBtn = new Button("Submit Report");
         uploadBtn.getStyleClass().add("action-button-green");
 
         uploadBtn.setOnAction(e -> {
-            if (!filePathField.getText().isEmpty()) {
+            if (!reportContentArea.getText().isEmpty()) {
                 try {
                     int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
                     int year = yearCombo.getValue();
@@ -1301,22 +1284,22 @@ public class SupervisorDashboardController {
                             supervisor.getDivisi(),
                             month,
                             year,
-                            filePathField.getText()
+                            reportContentArea.getText()
                     );
 
                     if (success) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success", "Report uploaded successfully!");
-                        filePathField.clear();
+                        showAlert(Alert.AlertType.INFORMATION, "Success", "Report submitted successfully!");
+                        reportContentArea.clear();
                         refreshReportHistoryTable();
                     } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report.");
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit report.");
                     }
                 } catch (Exception ex) {
-                    logger.severe("Error uploading report: " + ex.getMessage());
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report: " + ex.getMessage());
+                    logger.severe("Error submitting report: " + ex.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit report: " + ex.getMessage());
                 }
             } else {
-                showAlert(Alert.AlertType.WARNING, "Warning", "Please select a report file.");
+                showAlert(Alert.AlertType.WARNING, "Warning", "Please write a report.");
             }
         });
 

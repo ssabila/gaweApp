@@ -1015,12 +1015,18 @@ public class ManagerDashboardController {
         Label infoLabel = new Label(String.format("Division: %s\nMonth: %s %d\nSupervisor: %s",
                 report.getDivisi(), report.getMonthName(), report.getTahun(), report.getSupervisorId()));
 
+        TextArea reportContentArea = new TextArea(report.getContent());
+        reportContentArea.setEditable(false);
+        reportContentArea.setWrapText(true);
+        reportContentArea.setPrefHeight(200);
+
         TextArea notesArea = new TextArea();
         notesArea.setPromptText("Enter review notes...");
         notesArea.setPrefRowCount(4);
 
         content.getChildren().addAll(
                 new Label("Report Information:"), infoLabel,
+                new Label("Report Content:"), reportContentArea,
                 new Label("Review Notes:"), notesArea
         );
 

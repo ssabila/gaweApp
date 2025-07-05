@@ -11,7 +11,7 @@ public class Report {
     private String divisi;
     private int bulan;
     private int tahun;
-    private String filePath;
+    private String content; // Add this
     private Date uploadDate;
     private String status; // pending, reviewed, approved, rejected
     private String managerNotes;
@@ -21,12 +21,12 @@ public class Report {
     // Constructors
     public Report() {}
 
-    public Report(String supervisorId, String divisi, int bulan, int tahun, String filePath) {
+    public Report(String supervisorId, String divisi, int bulan, int tahun, String content) {
         this.supervisorId = supervisorId;
         this.divisi = divisi;
         this.bulan = bulan;
         this.tahun = tahun;
-        this.filePath = filePath;
+        this.content = content;
         this.uploadDate = new Date();
         this.status = "pending";
     }
@@ -54,8 +54,8 @@ public class Report {
     public int getTahun() { return tahun; }
     public void setTahun(int tahun) { this.tahun = tahun; }
 
-    public String getFilePath() { return filePath; }
-    public void setFilePath(String filePath) { this.filePath = filePath; }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
     public Date getUploadDate() { return uploadDate; }
     public void setUploadDate(Date uploadDate) { this.uploadDate = uploadDate; }

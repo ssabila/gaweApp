@@ -176,7 +176,6 @@ public class DataStore {
                 report.setDivisi(divisions[i]);
                 report.setBulan(month);
                 report.setTahun(2024);
-                report.setFilePath("reports/" + divisions[i] + "_" + month + "_2024.pdf");
                 report.setUploadDate(new Date());
                 report.setStatus(month == 12 ? "pending" : "reviewed");
                 if (!report.getStatus().equals("pending")) {
@@ -521,7 +520,6 @@ public class DataStore {
         report.setDivisi(divisi);
         report.setBulan(bulan);
         report.setTahun(tahun);
-        report.setFilePath(filePath);
         report.setUploadDate(new Date());
         report.setStatus("pending");
         reportList.add(report);
