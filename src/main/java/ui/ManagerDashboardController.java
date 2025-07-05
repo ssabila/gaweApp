@@ -271,7 +271,9 @@ public class ManagerDashboardController {
         try {
             List<Employee> allEmployees = dataStore.getAllEmployees();
             List<Report> pendingReports = dataStore.getPendingReports();
-            List<LeaveRequest> pendingLeaves = dataStore.getPendingLeaveRequests();
+
+            // Get pending leave requests for manager approval (supervisors + employees)
+            List<LeaveRequest> pendingLeaves = dataStore.getLeaveRequestsForApproval(manager.getId());
 
             // Refresh manager object to get updated leave balance
             Employee refreshedManager = dataStore.authenticateUser(manager.getId(), manager.getPassword());
@@ -279,7 +281,7 @@ public class ManagerDashboardController {
 
             VBox totalEmployeesCard = createStatsCard("Total Employees", String.valueOf(allEmployees.size()), "👥", "#3498db");
             VBox pendingReportsCard = createStatsCard("Pending Reports", String.valueOf(pendingReports.size()), "📄", "#e74c3c");
-            VBox pendingLeavesCard = createStatsCard("Pending Leaves", String.valueOf(pendingLeaves.size()), "🏖️", "#f39c12");
+            VBox pendingLeavesCard = createStatsCard("Leave Approvals", String.valueOf(pendingLeaves.size()), "🏖️", "#f39c12");
             VBox myLeaveCard = createStatsCard("My Leave Days", String.valueOf(managerLeaveDays), "🌴", "#9b59b6");
 
             statsContainer.getChildren().addAll(totalEmployeesCard, pendingReportsCard, pendingLeavesCard, myLeaveCard);
@@ -294,19 +296,24 @@ public class ManagerDashboardController {
         VBox card = new VBox(10);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(20));
-        card.setPrefSize(200, 120);
         card.getStyleClass().add("stats-card");
-        card.setStyle(String.format("-fx-border-color: %s; -fx-border-width: 0 0 4 0;", color));
+        card.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+        card.setPrefWidth(180);
+        card.setPrefHeight(120);
 
         Label iconLabel = new Label(icon);
-        iconLabel.getStyleClass().add("stats-card-icon");
+        iconLabel.setStyle("-fx-font-size: 24px;");
+        iconLabel.setTextFill(Color.WHITE);
 
         Label valueLabel = new Label(value);
-        valueLabel.getStyleClass().add("stats-card-value");
-        valueLabel.setStyle(String.format("-fx-text-fill: %s;", color));
+        valueLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+        valueLabel.setTextFill(Color.WHITE);
 
         Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("stats-card-title");
+        titleLabel.setStyle("-fx-font-size: 12px;");
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setWrapText(true);
+        titleLabel.setAlignment(Pos.CENTER);
 
         card.getChildren().addAll(iconLabel, valueLabel, titleLabel);
         return card;
@@ -790,22 +797,28 @@ public class ManagerDashboardController {
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("Leave Request Approvals - Manager Level");
+        Label title = new Label("🏖️ Leave Request Approvals - Manager Level");
         title.getStyleClass().add("content-title");
+
+        Label infoLabel = new Label("📋 As a Manager, you can approve leave requests from Supervisors and all Employees");
+        infoLabel.getStyleClass().add("page-subtitle");
 
         TabPane tabPane = new TabPane();
         tabPane.getStyleClass().add("custom-tab-pane");
 
-        Tab pendingTab = new Tab("Pending Approvals", createManagerLeaveApprovalTable());
-        Tab historyTab = new Tab("Approval History", createManagerLeaveApprovalHistoryTable());
+        // Pending Approvals Tab
+        Tab pendingTab = new Tab("⏳ Pending Approvals", createManagerLeaveApprovalTable());
+
+        // Approval History Tab
+        Tab historyTab = new Tab("📋 Approval History", createManagerLeaveApprovalHistoryTable());
 
         pendingTab.setClosable(false);
         historyTab.setClosable(false);
 
         tabPane.getTabs().addAll(pendingTab, historyTab);
 
-        content.getChildren().addAll(title, tabPane);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
+        content.getChildren().addAll(title, infoLabel, tabPane);
+        setScrollableContent(content);
     }
 
     private void showSalaryManagementContent() {
@@ -1146,18 +1159,448 @@ public class ManagerDashboardController {
 
     private TableView<LeaveRequest> createManagerLeaveApprovalTable() {
         TableView<LeaveRequest> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk manager leave approval table
+        table.setPrefHeight(400);
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("👤 Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+        employeeCol.setPrefWidth(150);
+
+        TableColumn<LeaveRequest, String> roleCol = new TableColumn<>("👔 Role");
+        roleCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            String role = emp != null ? emp.getRole() : "Unknown";
+            String icon = role.equals("supervisor") ? "👨‍💼" : "👤";
+            return new javafx.beans.property.SimpleStringProperty(icon + " " + role.substring(0, 1).toUpperCase() + role.substring(1));
+        });
+        roleCol.setPrefWidth(120);
+
+        TableColumn<LeaveRequest, String> divisionCol = new TableColumn<>("🏢 Division");
+        divisionCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getDivisi() : "Unknown");
+        });
+        divisionCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Leave Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+        typeCol.setPrefWidth(120);
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+        startDateCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("📅 End Date");
+        endDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
+        endDateCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+        daysCol.setPrefWidth(70);
+
+        TableColumn<LeaveRequest, String> reasonCol = new TableColumn<>("📋 Reason");
+        reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
+        reasonCol.setPrefWidth(200);
+
+        TableColumn<LeaveRequest, String> requestDateCol = new TableColumn<>("📅 Requested");
+        requestDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getRequestDate())));
+        requestDateCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("⚡ Actions");
+        actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
+            private final HBox actionBox = new HBox(5);
+            private final Button approveBtn = new Button("✅ Approve");
+            private final Button rejectBtn = new Button("❌ Reject");
+            private final Button viewBtn = new Button("👁️ View");
+
+            {
+                approveBtn.getStyleClass().add("action-button-small-green");
+                rejectBtn.getStyleClass().add("action-button-small-red");
+                viewBtn.getStyleClass().add("review-button");
+
+                actionBox.getChildren().addAll(viewBtn, approveBtn, rejectBtn);
+                actionBox.setAlignment(Pos.CENTER);
+
+                viewBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showManagerLeaveRequestDetailsDialog(request);
+                });
+
+                approveBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showManagerLeaveApprovalDialog(request, true);
+                });
+
+                rejectBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showManagerLeaveApprovalDialog(request, false);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : actionBox);
+            }
+        });
+        actionCol.setPrefWidth(180);
+
+        table.getColumns().addAll(employeeCol, roleCol, divisionCol, typeCol, startDateCol, endDateCol,
+                daysCol, reasonCol, requestDateCol, actionCol);
+
+        refreshManagerLeaveApprovalsTable(table);
+
         return table;
     }
 
+    private void refreshManagerLeaveApprovalsTable(TableView<LeaveRequest> table) {
+        if (dataStore != null && manager != null) {
+            try {
+                System.out.println("=== MANAGER LEAVE APPROVALS DEBUG ===");
+                System.out.println("Manager: " + manager.getNama() + " (ID: " + manager.getId() + ")");
+                System.out.println("Role: " + manager.getRole());
+
+                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(manager.getId());
+                System.out.println("Found " + pendingRequests.size() + " pending requests for manager approval");
+
+                for (LeaveRequest req : pendingRequests) {
+                    Employee emp = dataStore.getEmployeeById(req.getEmployeeId());
+                    System.out.println("- Request from: " + (emp != null ? emp.getNama() + " (" + emp.getRole() + ", " + emp.getDivisi() + ")" : req.getEmployeeId()));
+                }
+
+                table.setItems(FXCollections.observableArrayList(pendingRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading leave requests for manager approval: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void showManagerLeaveRequestDetailsDialog(LeaveRequest request) {
+        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
+        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("👁️ Leave Request Details");
+        dialog.setHeaderText("Leave request details for " + employeeName);
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(25));
+
+        // Employee Information Section
+        Label empInfoTitle = new Label("👤 Employee Information");
+        empInfoTitle.getStyleClass().add("section-title");
+
+        GridPane empInfoGrid = new GridPane();
+        empInfoGrid.setHgap(15);
+        empInfoGrid.setVgap(10);
+        empInfoGrid.setPadding(new Insets(10));
+
+        empInfoGrid.add(new Label("Name:"), 0, 0);
+        empInfoGrid.add(new Label(employeeName), 1, 0);
+
+        if (requestingEmployee != null) {
+            empInfoGrid.add(new Label("Role:"), 0, 1);
+            empInfoGrid.add(new Label(requestingEmployee.getRole().substring(0, 1).toUpperCase() + requestingEmployee.getRole().substring(1)), 1, 1);
+
+            empInfoGrid.add(new Label("Division:"), 0, 2);
+            empInfoGrid.add(new Label(requestingEmployee.getDivisi()), 1, 2);
+
+            empInfoGrid.add(new Label("Position:"), 0, 3);
+            empInfoGrid.add(new Label(requestingEmployee.getJabatan()), 1, 3);
+
+            empInfoGrid.add(new Label("Remaining Leave Days:"), 0, 4);
+            empInfoGrid.add(new Label(String.valueOf(requestingEmployee.getSisaCuti())), 1, 4);
+        }
+
+        // Leave Request Details Section
+        Label reqDetailsTitle = new Label("📋 Leave Request Details");
+        reqDetailsTitle.getStyleClass().add("section-title");
+
+        GridPane reqDetailsGrid = new GridPane();
+        reqDetailsGrid.setHgap(15);
+        reqDetailsGrid.setVgap(10);
+        reqDetailsGrid.setPadding(new Insets(10));
+
+        reqDetailsGrid.add(new Label("Leave Type:"), 0, 0);
+        reqDetailsGrid.add(new Label(request.getLeaveType()), 1, 0);
+
+        reqDetailsGrid.add(new Label("Start Date:"), 0, 1);
+        reqDetailsGrid.add(new Label(sdf.format(request.getStartDate())), 1, 1);
+
+        reqDetailsGrid.add(new Label("End Date:"), 0, 2);
+        reqDetailsGrid.add(new Label(sdf.format(request.getEndDate())), 1, 2);
+
+        reqDetailsGrid.add(new Label("Total Days:"), 0, 3);
+        reqDetailsGrid.add(new Label(String.valueOf(request.getTotalDays())), 1, 3);
+
+        reqDetailsGrid.add(new Label("Request Date:"), 0, 4);
+        reqDetailsGrid.add(new Label(sdf.format(request.getRequestDate())), 1, 4);
+
+        reqDetailsGrid.add(new Label("Reason:"), 0, 5);
+        Label reasonLabel = new Label(request.getReason());
+        reasonLabel.setWrapText(true);
+        reasonLabel.setMaxWidth(300);
+        reqDetailsGrid.add(reasonLabel, 1, 5);
+
+        content.getChildren().addAll(
+                empInfoTitle, empInfoGrid,
+                new Separator(),
+                reqDetailsTitle, reqDetailsGrid
+        );
+
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        dialog.showAndWait();
+    }
+
+    // NEW METHOD: Show Manager Leave Approval Dialog
+    private void showManagerLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
+        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
+        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
+        String employeeRole = requestingEmployee != null ? requestingEmployee.getRole() : "Unknown";
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(isApproval ? "✅ Approve Leave Request" : "❌ Reject Leave Request");
+        dialog.setHeaderText((isApproval ? "Approve" : "Reject") + " leave request from " + employeeName + " (" + employeeRole + ")");
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+
+        // Quick Summary
+        GridPane summaryGrid = new GridPane();
+        summaryGrid.setHgap(15);
+        summaryGrid.setVgap(10);
+        summaryGrid.getStyleClass().add("form-container");
+        summaryGrid.setPadding(new Insets(15));
+
+        summaryGrid.add(new Label("👤 Employee:"), 0, 0);
+        summaryGrid.add(new Label(employeeName), 1, 0);
+
+        summaryGrid.add(new Label("👔 Role:"), 0, 1);
+        summaryGrid.add(new Label(employeeRole.substring(0, 1).toUpperCase() + employeeRole.substring(1)), 1, 1);
+
+        summaryGrid.add(new Label("🏢 Division:"), 0, 2);
+        summaryGrid.add(new Label(requestingEmployee != null ? requestingEmployee.getDivisi() : "Unknown"), 1, 2);
+
+        summaryGrid.add(new Label("📝 Leave Type:"), 0, 3);
+        summaryGrid.add(new Label(request.getLeaveType()), 1, 3);
+
+        summaryGrid.add(new Label("📅 Period:"), 0, 4);
+        summaryGrid.add(new Label(sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate())), 1, 4);
+
+        summaryGrid.add(new Label("📊 Total Days:"), 0, 5);
+        summaryGrid.add(new Label(String.valueOf(request.getTotalDays())), 1, 5);
+
+        summaryGrid.add(new Label("📋 Reason:"), 0, 6);
+        Label reasonLabel = new Label(request.getReason());
+        reasonLabel.setWrapText(true);
+        reasonLabel.setMaxWidth(300);
+        summaryGrid.add(reasonLabel, 1, 6);
+
+        // Manager Notes Section
+        Label notesLabel = new Label("💬 Manager " + (isApproval ? "Approval" : "Rejection") + " Notes:");
+        notesLabel.getStyleClass().add("form-label");
+
+        TextArea notesArea = new TextArea();
+        notesArea.setPromptText("Enter your decision notes here (required)...");
+        notesArea.setPrefRowCount(4);
+        notesArea.setMaxWidth(400);
+
+        // Impact Analysis (for Manager decision making)
+        Label impactTitle = new Label("📊 Impact Analysis");
+        impactTitle.getStyleClass().add("section-title");
+
+        VBox impactBox = new VBox(8);
+        impactBox.getStyleClass().add("form-container");
+        impactBox.setPadding(new Insets(15));
+
+        if (requestingEmployee != null) {
+            impactBox.getChildren().addAll(
+                    new Label("• Current leave balance: " + requestingEmployee.getSisaCuti() + " days"),
+                    new Label("• After approval: " + (requestingEmployee.getSisaCuti() - request.getTotalDays()) + " days remaining"),
+                    new Label("• Employee performance: " + df.format(requestingEmployee.getSupervisorRating()) + "% supervisor rating"),
+                    new Label("• Role impact: " + (employeeRole.equals("supervisor") ? "High - Team leadership role" : "Medium - Individual contributor"))
+            );
+        }
+
+        content.getChildren().addAll(
+                new Label("📋 Request Summary:"),
+                summaryGrid,
+                new Separator(),
+                impactTitle,
+                impactBox,
+                new Separator(),
+                notesLabel,
+                notesArea
+        );
+
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType confirmButton = new ButtonType(isApproval ? "✅ Approve Request" : "❌ Reject Request", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(confirmButton, cancelButton);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == confirmButton) {
+                if (notesArea.getText().trim().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "Missing Notes",
+                            "Please provide notes for your decision. This is required for audit purposes.");
+                    return;
+                }
+
+                try {
+                    boolean success;
+                    if (isApproval) {
+                        success = dataStore.approveLeaveRequest(request.getId(), manager.getId(), notesArea.getText());
+                    } else {
+                        success = dataStore.rejectLeaveRequest(request.getId(), manager.getId(), notesArea.getText());
+                    }
+
+                    if (success) {
+                        String action = isApproval ? "approved" : "rejected";
+                        showAlert(Alert.AlertType.INFORMATION, "Success",
+                                "Leave request " + action + " successfully!\n\n" +
+                                        "Employee: " + employeeName + "\n" +
+                                        "Period: " + sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate()));
+
+                        // Refresh tables and dashboard
+                        refreshManagerLeaveApprovalsTables();
+                        showDashboardContent(); // Refresh stats
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request.");
+                    }
+                } catch (Exception e) {
+                    logger.severe("Error processing leave request: " + e.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    // NEW METHOD: Create Manager Leave Approval History Table
     private TableView<LeaveRequest> createManagerLeaveApprovalHistoryTable() {
         TableView<LeaveRequest> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk manager leave approval history table
+        table.setPrefHeight(400);
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("👤 Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+        employeeCol.setPrefWidth(120);
+
+        TableColumn<LeaveRequest, String> roleCol = new TableColumn<>("👔 Role");
+        roleCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            String role = emp != null ? emp.getRole() : "Unknown";
+            return new javafx.beans.property.SimpleStringProperty(role.substring(0, 1).toUpperCase() + role.substring(1));
+        });
+        roleCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+        typeCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+        startDateCol.setPrefWidth(90);
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+        daysCol.setPrefWidth(60);
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("✅ Status");
+        statusCol.setCellValueFactory(cellData -> {
+            String status = cellData.getValue().getStatus();
+            String icon = status.equals("approved") ? "✅" : "❌";
+            return new javafx.beans.property.SimpleStringProperty(icon + " " + status.substring(0, 1).toUpperCase() + status.substring(1));
+        });
+        statusCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> approvalDateCol = new TableColumn<>("📅 Decision Date");
+        approvalDateCol.setCellValueFactory(cellData -> {
+            Date approvalDate = cellData.getValue().getApprovalDate();
+            return new javafx.beans.property.SimpleStringProperty(
+                    approvalDate != null ? sdf.format(approvalDate) : "N/A");
+        });
+        approvalDateCol.setPrefWidth(100);
+
+        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("📋 Manager Notes");
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
+        notesCol.setPrefWidth(200);
+
+        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("⚡ Action");
+        actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
+            private final Button viewBtn = new Button("👁️ View");
+
+            {
+                viewBtn.getStyleClass().add("review-button");
+                viewBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showManagerLeaveRequestDetailsDialog(request);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : viewBtn);
+            }
+        });
+        actionCol.setPrefWidth(80);
+
+        table.getColumns().addAll(employeeCol, roleCol, typeCol, startDateCol, daysCol,
+                statusCol, approvalDateCol, notesCol, actionCol);
+
+        refreshManagerLeaveApprovalHistoryTable(table);
+
         return table;
+    }
+
+    // NEW METHOD: Refresh Manager Leave Approval History Table
+    private void refreshManagerLeaveApprovalHistoryTable(TableView<LeaveRequest> table) {
+        if (dataStore != null && manager != null) {
+            try {
+                List<LeaveRequest> allRequests = dataStore.getAllLeaveRequests();
+
+                // Filter requests that were approved/rejected by this manager
+                List<LeaveRequest> managerApprovals = allRequests.stream()
+                        .filter(req -> manager.getId().equals(req.getApproverId()))
+                        .filter(req -> "approved".equals(req.getStatus()) || "rejected".equals(req.getStatus()))
+                        .sorted((r1, r2) -> {
+                            // Sort by approval date, newest first
+                            if (r1.getApprovalDate() == null && r2.getApprovalDate() == null) return 0;
+                            if (r1.getApprovalDate() == null) return 1;
+                            if (r2.getApprovalDate() == null) return -1;
+                            return r2.getApprovalDate().compareTo(r1.getApprovalDate());
+                        })
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(managerApprovals));
+            } catch (Exception e) {
+                logger.severe("Error loading manager approval history: " + e.getMessage());
+            }
+        }
+    }
+
+    // NEW METHOD: Refresh all Manager Leave Approval Tables
+    private void refreshManagerLeaveApprovalsTables() {
+        // This method would refresh any existing leave approval tables
+        // You would call this after approving/rejecting requests
+        Platform.runLater(() -> {
+            showLeaveApprovalsContent(); // This will recreate the tabs with fresh data
+        });
     }
 
     private TableView<Employee> createSalaryOverviewTable() {
