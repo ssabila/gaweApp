@@ -8,88 +8,81 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.SVGPath?>
 
-<BorderPane style="-fx-background-color: #B5F3EE;" stylesheets="@../ui/dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.LoginController">
+<BorderPane style="-fx-background-color: linear-gradient(to bottom right, #216163, #2B7583);" stylesheets="@../ui/dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.LoginController">
     <center>
-        <VBox alignment="CENTER" maxWidth="480.0" spacing="32.0" styleClass="login-container">
+        <VBox alignment="CENTER" maxWidth="400.0" spacing="24.0" styleClass="login-container">
             <padding>
-                <Insets bottom="48.0" left="48.0" right="48.0" top="48.0" />
+                <Insets bottom="32.0" left="32.0" right="32.0" top="32.0" />
             </padding>
             <children>
                 <!-- Logo and App Name -->
-                <VBox alignment="CENTER" spacing="16.0">
+                <VBox alignment="CENTER" spacing="12.0">
                     <children>
-                        <ImageView fitHeight="64.0" fitWidth="64.0" preserveRatio="true">
+                        <ImageView fitHeight="80.0" fitWidth="200.0" preserveRatio="true" styleClass="login-logo">
                             <image>
-                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe_logo-Kf7kejqXZMI0fMKQdGZnMkXcD9BvU4.png" />
+                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe-Xz7xtyUI2Njg08MWPTpiyUssVTC8HR.png" />
                             </image>
                         </ImageView>
-                        <Label styleClass="login-title" text="GAWE" />
                         <Label styleClass="login-subtitle" text="Employee Management System" />
                         <Label styleClass="login-status" text="✅ Connected to MySQL Database" />
                     </children>
                 </VBox>
 
                 <!-- Login Form -->
-                <VBox alignment="CENTER" spacing="24.0">
+                <VBox alignment="CENTER" spacing="20.0">
                     <children>
-                        <GridPane alignment="CENTER" hgap="16.0" vgap="20.0">
-                            <columnConstraints>
-                                <ColumnConstraints halignment="RIGHT" hgrow="SOMETIMES" maxWidth="140.0" minWidth="10.0" prefWidth="120.0" />
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="300.0" minWidth="10.0" prefWidth="300.0" />
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                            </rowConstraints>
+                        <VBox spacing="16.0">
                             <children>
-                                <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                                <!-- Employee ID Field -->
+                                <VBox spacing="6.0">
                                     <children>
-                                        <ImageView fitHeight="20.0" fitWidth="20.0" preserveRatio="true">
-                                            <image>
-                                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/user-bkdrpSHQNZJP1T5SbXvxv2ElSmK8qj.png" />
-                                            </image>
-                                        </ImageView>
-                                        <Label style="-fx-font-family: 'Poppins'; -fx-font-weight: 600; -fx-text-fill: #216163; -fx-font-size: 14px;" text="Employee ID:" />
-                                    </children>
-                                </HBox>
-                                <TextField fx:id="employeeIdField" promptText="Enter your employee ID" style="-fx-font-family: 'Poppins'; -fx-padding: 16; -fx-background-radius: 12; -fx-border-color: #B5F3EE; -fx-border-radius: 12; -fx-background-color: #EFFFFFF; -fx-font-size: 14px; -fx-text-fill: #216163;" GridPane.columnIndex="1" />
-
-                                <HBox alignment="CENTER_RIGHT" spacing="8.0" GridPane.rowIndex="1">
-                                    <children>
-                                        <Label style="-fx-font-family: 'Poppins'; -fx-font-weight: 600; -fx-text-fill: #216163; -fx-font-size: 14px;" text="🔒 Password:" />
-                                    </children>
-                                </HBox>
-
-                                <StackPane GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                    <children>
-                                        <PasswordField fx:id="passwordField" promptText="Enter your password" style="-fx-font-family: 'Poppins'; -fx-padding: 16; -fx-background-radius: 12; -fx-border-color: #B5F3EE; -fx-border-radius: 12; -fx-background-color: #EFFFFFF; -fx-font-size: 14px; -fx-text-fill: #216163;" />
-                                        <TextField fx:id="passwordTextField" promptText="Enter your password" style="-fx-font-family: 'Poppins'; -fx-padding: 16; -fx-background-radius: 12; -fx-border-color: #B5F3EE; -fx-border-radius: 12; -fx-background-color: #EFFFFFF; -fx-font-size: 14px; -fx-text-fill: #216163;" visible="false" />
-                                        <HBox alignment="CENTER_RIGHT" StackPane.alignment="CENTER_RIGHT">
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
                                             <children>
-                                                <Button fx:id="togglePasswordVisibility" onAction="#togglePasswordVisibility" style="-fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 8;">
-                                                    <graphic>
-                                                        <SVGPath fx:id="eyeIcon" content="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="#2B7583" scaleX="0.8" scaleY="0.8" />
-                                                    </graphic>
-                                                </Button>
+                                                <ImageView fitHeight="16.0" fitWidth="16.0" preserveRatio="true">
+                                                    <image>
+                                                        <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/user-bkdrpSHQNZJP1T5SbXvxv2ElSmK8qj.png" />
+                                                    </image>
+                                                </ImageView>
+                                                <Label styleClass="form-label-login" text="Employee ID" />
                                             </children>
-                                            <padding>
-                                                <Insets right="8.0" />
-                                            </padding>
                                         </HBox>
+                                        <TextField fx:id="employeeIdField" promptText="Enter your employee ID" styleClass="login-form-field" />
                                     </children>
-                                </StackPane>
-                            </children>
-                        </GridPane>
+                                </VBox>
 
-                        <Button onAction="#handleLogin" prefWidth="300.0" styleClass="login-button" text="🚀 Sign In">
+                                <!-- Password Field -->
+                                <VBox spacing="6.0">
+                                    <children>
+                                        <Label styleClass="form-label-login" text="🔒 Password" />
+                                        <StackPane>
+                                            <children>
+                                                <PasswordField fx:id="passwordField" promptText="Enter your password" styleClass="login-form-field" />
+                                                <TextField fx:id="passwordTextField" promptText="Enter your password" styleClass="login-form-field" visible="false" />
+                                                <HBox alignment="CENTER_RIGHT" StackPane.alignment="CENTER_RIGHT">
+                                                    <children>
+                                                        <Button fx:id="togglePasswordVisibility" onAction="#togglePasswordVisibility" style="-fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6;">
+                                                            <graphic>
+                                                                <SVGPath fx:id="eyeIcon" content="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="#2B7583" scaleX="0.7" scaleY="0.7" />
+                                                            </graphic>
+                                                        </Button>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets right="6.0" />
+                                                    </padding>
+                                                </HBox>
+                                            </children>
+                                        </StackPane>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+
+                        <Button onAction="#handleLogin" prefWidth="280.0" styleClass="login-button" text="🚀 Sign In">
                             <VBox.margin>
                                 <Insets top="8.0" />
                             </VBox.margin>
@@ -98,10 +91,10 @@
                 </VBox>
 
                 <!-- Demo Credentials -->
-                <VBox alignment="CENTER" spacing="12.0" styleClass="demo-credentials">
+                <VBox alignment="CENTER" spacing="10.0" styleClass="demo-credentials">
                     <children>
                         <Label styleClass="demo-title" text="🎮 Demo Credentials" />
-                        <VBox alignment="CENTER" spacing="8.0">
+                        <VBox alignment="CENTER" spacing="6.0">
                             <children>
                                 <Label styleClass="demo-text" text="👔 Manager: MNG001 / password123" />
                                 <Label styleClass="demo-text" text="👨‍💼 Supervisor: SUP001 / password123" />
