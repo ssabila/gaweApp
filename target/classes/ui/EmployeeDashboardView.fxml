@@ -50,7 +50,7 @@
                     <children>
                         <ImageView styleClass="header-logo" fitHeight="40.0" fitWidth="120.0" preserveRatio="true">
                             <image>
-                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe-Xz7xtyUI2Njg08MWPTpiyUssVTC8HR.png" />
+                                <Image url="/public/gawe.png" />
                             </image>
                         </ImageView>
                     </children>

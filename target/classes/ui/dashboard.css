@@ -524,7 +524,7 @@
 }
 
 .table-view .column-header-background {
-    -fx-background-color: #216163;
+    -fx-background-color: #3baa99;
     -fx-background-radius: 8 8 0 0;
 }
 
@@ -549,7 +549,7 @@
 }
 
 .table-row-cell:hover {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: #f8fffe;
 }
 
 .table-row-cell:selected {
@@ -687,7 +687,7 @@
 }
 
 .custom-tab-pane .tab:selected {
-    -fx-background-color: #216163;
+    -fx-background-color: #d3fdff;
     -fx-text-fill: #ffffff;
 }
 
