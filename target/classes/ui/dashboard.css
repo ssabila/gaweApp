@@ -9,8 +9,6 @@
     -fx-background-color: #ffffff;
 }
 
-/* === PERBAIKAN UI LOGIN DIMULAI === */
-
 /* Latar belakang untuk halaman login dengan gradasi dan pola garis diagonal */
 .login-background {
     -fx-background-color: linear-gradient(to bottom right, #216163, #2b7583);
@@ -22,21 +20,6 @@
             rgba(255, 255, 255, 0.04) 10px
             );
 }
-
-/* Form login dengan efek glassmorphism, berbentuk persegi dan tidak memenuhi jendela */
-.login-container {
-    -fx-background-color: rgba(239, 255, 255, 0.15); /* Semi-transparan untuk efek kaca */
-    -fx-background-radius: 16;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 20, 0, 0, 8);
-    -fx-border-color: rgba(181, 243, 238, 0.3);
-    -fx-border-width: 1;
-    -fx-border-radius: 16;
-    -fx-max-width: 400; /* Memastikan lebar form tidak memenuhi jendela */
-    -fx-pref-width: 400;
-}
-
-/* === PERBAIKAN UI LOGIN SELESAI === */
-
 
 /* Header styling */
 .header-box {
@@ -81,6 +64,7 @@
     -fx-scale-y: 1.05;
 }
 
+/* === PERUBAHAN SCROLL & RESPONSIVE DIMULAI === */
 /* Navigation sidebar */
 .sidebar {
     -fx-background-color: #ffffff;
@@ -89,6 +73,8 @@
     -fx-border-color: #216163;
     -fx-border-width: 0 1 0 0;
     -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 6, 0, 2, 0);
+    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal jika konten melebihi tinggi */
+    -fx-overflow-x: hidden; /* Mencegah scroll horizontal */
 }
 
 .navigation-sidebar {
@@ -98,7 +84,18 @@
     -fx-border-color: #216163;
     -fx-border-width: 0 1 0 0;
     -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 6, 0, 2, 0);
+    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal jika konten melebihi tinggi */
+    -fx-overflow-x: hidden; /* Mencegah scroll horizontal */
 }
+
+/* Content area */
+.content-area {
+    -fx-background-color: #ffffff;
+    -fx-padding: 30;
+    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal untuk area konten */
+}
+/* === PERUBAHAN SCROLL & RESPONSIVE SELESAI === */
+
 
 .sidebar-header {
     -fx-background-color: #ffffff;
@@ -201,12 +198,6 @@
     -fx-fit-height: 40;
     -fx-fit-width: 120;
     -fx-preserve-ratio: true;
-}
-
-/* Content area */
-.content-area {
-    -fx-background-color: #ffffff;
-    -fx-padding: 30;
 }
 
 .dashboard-content-container {
@@ -776,6 +767,17 @@
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 16;
+}
+
+.login-container {
+    -fx-background-color: rgba(239, 255, 255, 0.15);
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 20, 0, 0, 8);
+    -fx-border-color: rgba(181, 243, 238, 0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-max-width: 400;
+    -fx-pref-width: 400;
 }
 
 .login-logo {

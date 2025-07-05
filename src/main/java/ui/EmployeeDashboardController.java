@@ -20,7 +20,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
+import javafx.stage.Stage; // <-- IMPORT YANG DITAMBAHKAN
 
 import java.time.ZoneId;
 import java.util.*;
@@ -143,13 +143,19 @@ public class EmployeeDashboardController {
         Platform.exit();
     }
 
+    private void setScrollableContent(Region contentNode) {
+        contentArea.getChildren().clear();
+        ScrollPane scrollPane = new ScrollPane(contentNode);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background-insets: 0;");
+        contentArea.getChildren().add(scrollPane);
+    }
+
     private void showDashboardContent() {
         if (employee == null || dataStore == null || contentArea == null) {
             logger.warning("Cannot show dashboard content - missing required objects");
             return;
         }
-
-        contentArea.getChildren().clear();
 
         VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
@@ -163,7 +169,7 @@ public class EmployeeDashboardController {
         VBox recentActivities = createRecentActivitiesSection();
 
         content.getChildren().addAll(title, quickActions, statsCards, recentActivities);
-        contentArea.getChildren().add(content);
+        setScrollableContent(content);
     }
 
     private HBox createQuickActions() {
@@ -353,12 +359,9 @@ public class EmployeeDashboardController {
     }
 
     private void showMyAttendance() {
-        if (employee == null || dataStore == null || contentArea == null) {
+        if (employee == null || dataStore == null) {
             return;
         }
-
-        contentArea.getChildren().clear();
-
         VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
@@ -369,7 +372,7 @@ public class EmployeeDashboardController {
         TableView<Attendance> attendanceTable = createMyAttendanceTable();
 
         content.getChildren().addAll(title, attendanceTable);
-        contentArea.getChildren().add(content);
+        setScrollableContent(content);
     }
 
     private TableView<Attendance> createMyAttendanceTable() {
@@ -399,18 +402,15 @@ public class EmployeeDashboardController {
             List<Attendance> myAttendance = dataStore.getAttendanceByEmployee(employee.getId());
             table.setItems(FXCollections.observableArrayList(myAttendance));
         }
-        table.setPrefHeight(400);
+        table.setPrefHeight(600);
 
         return table;
     }
 
     private void showMyMeetings() {
-        if (employee == null || dataStore == null || contentArea == null) {
+        if (employee == null || dataStore == null) {
             return;
         }
-
-        contentArea.getChildren().clear();
-
         VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
@@ -421,7 +421,7 @@ public class EmployeeDashboardController {
         TableView<Meeting> meetingsTable = createMyMeetingsTable();
 
         content.getChildren().addAll(title, meetingsTable);
-        contentArea.getChildren().add(content);
+        setScrollableContent(content);
     }
 
     private TableView<Meeting> createMyMeetingsTable() {
@@ -453,18 +453,15 @@ public class EmployeeDashboardController {
             List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(employee.getId());
             table.setItems(FXCollections.observableArrayList(myMeetings));
         }
-        table.setPrefHeight(400);
+        table.setPrefHeight(600);
 
         return table;
     }
 
     private void showMyLeaveRequests() {
-        if (employee == null || dataStore == null || contentArea == null) {
+        if (employee == null || dataStore == null) {
             return;
         }
-
-        contentArea.getChildren().clear();
-
         VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
@@ -479,7 +476,7 @@ public class EmployeeDashboardController {
         TableView<LeaveRequest> leaveTable = createMyLeaveRequestsTable();
 
         content.getChildren().addAll(title, newRequestBtn, leaveTable);
-        contentArea.getChildren().add(content);
+        setScrollableContent(content);
     }
 
     private TableView<LeaveRequest> createMyLeaveRequestsTable() {
@@ -513,7 +510,7 @@ public class EmployeeDashboardController {
             List<LeaveRequest> myLeaveRequests = dataStore.getLeaveRequestsByEmployee(employee.getId());
             table.setItems(FXCollections.observableArrayList(myLeaveRequests));
         }
-        table.setPrefHeight(400);
+        table.setPrefHeight(600);
 
         return table;
     }
@@ -617,12 +614,9 @@ public class EmployeeDashboardController {
     }
 
     private void showMySalaryContent() {
-        if (employee == null || dataStore == null || contentArea == null) {
+        if (employee == null || dataStore == null) {
             return;
         }
-
-        contentArea.getChildren().clear();
-
         VBox content = new VBox(25);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
@@ -634,7 +628,7 @@ public class EmployeeDashboardController {
         TableView<SalaryHistory> salaryHistoryTable = createSalaryHistoryTable();
 
         content.getChildren().addAll(title, currentSalaryBox, salaryHistoryTable);
-        contentArea.getChildren().add(content);
+        setScrollableContent(content);
     }
 
     private VBox createCurrentSalaryBreakdown() {
