@@ -9,6 +9,35 @@
     -fx-background-color: #ffffff;
 }
 
+/* === PERBAIKAN UI LOGIN DIMULAI === */
+
+/* Latar belakang untuk halaman login dengan gradasi dan pola garis diagonal */
+.login-background {
+    -fx-background-color: linear-gradient(to bottom right, #216163, #2b7583);
+    -fx-background-image:
+            repeating-linear-gradient(45deg,
+            transparent,
+            transparent 5px,
+            rgba(255, 255, 255, 0.04) 5px,
+            rgba(255, 255, 255, 0.04) 10px
+            );
+}
+
+/* Form login dengan efek glassmorphism, berbentuk persegi dan tidak memenuhi jendela */
+.login-container {
+    -fx-background-color: rgba(239, 255, 255, 0.15); /* Semi-transparan untuk efek kaca */
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 20, 0, 0, 8);
+    -fx-border-color: rgba(181, 243, 238, 0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-max-width: 400; /* Memastikan lebar form tidak memenuhi jendela */
+    -fx-pref-width: 400;
+}
+
+/* === PERBAIKAN UI LOGIN SELESAI === */
+
+
 /* Header styling */
 .header-box {
     -fx-background-color: #ffffff;
@@ -747,18 +776,6 @@
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 16;
-}
-
-/* Login specific styles with glassmorphism */
-.login-container {
-    -fx-background-color: rgba(239, 255, 255, 0.15);
-    -fx-background-radius: 16;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 20, 0, 0, 8);
-    -fx-border-color: rgba(181, 243, 238, 0.3);
-    -fx-border-width: 1;
-    -fx-border-radius: 16;
-    -fx-max-width: 400;
-    -fx-pref-width: 400;
 }
 
 .login-logo {
