@@ -20,7 +20,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage; // <-- IMPORT YANG DITAMBAHKAN
+import javafx.stage.Stage;
 
 import java.time.ZoneId;
 import java.util.*;
@@ -59,12 +59,7 @@ public class EmployeeDashboardController {
 
     public void setEmployee(Employee employee) {
         this.employee = employee;
-        if (userWelcomeLabel != null) {
-            userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
-        }
-        if (navUserGreeting != null) {
-            navUserGreeting.setText("Hello, " + employee.getNama() + "!");
-        }
+        updateUserLabels();
         initializeContent();
     }
 
@@ -87,14 +82,20 @@ public class EmployeeDashboardController {
         populateNavigationButtons();
     }
 
-    private void initializeContent() {
-        if (employee != null && dataStore != null) {
+    private void updateUserLabels() {
+        if (employee != null) {
             if (userWelcomeLabel != null) {
                 userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
             }
             if (navUserGreeting != null) {
                 navUserGreeting.setText("Hello, " + employee.getNama() + "!");
             }
+        }
+    }
+
+    private void initializeContent() {
+        if (employee != null && dataStore != null) {
+            updateUserLabels();
             showDashboardContent();
         }
     }
@@ -780,8 +781,7 @@ public class EmployeeDashboardController {
                 try {
                     dataStore.updateEmployee(employee);
                     showAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully!");
-                    userWelcomeLabel.setText("Welcome, " + employee.getNama() + " (Employee)");
-                    navUserGreeting.setText("Hello, " + employee.getNama() + "!");
+                    updateUserLabels();
                 } catch (Exception e) {
                     showAlert(Alert.AlertType.ERROR, "Error", "Failed to update profile.");
                 }

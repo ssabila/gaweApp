@@ -1,4 +1,4 @@
-/* Modern GAWE Dashboard CSS with Custom Color Palette */
+/* Modern GAWE Dashboard CSS with Custom Color Palette - Responsive & Scrollable */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=The+Seasons:wght@400;700&display=swap");
 
@@ -9,25 +9,40 @@
     -fx-background-color: #ffffff;
 }
 
+/* Responsive breakpoints */
+@media screen and (max-width: 1366px) {
+    .root {
+        -fx-font-size: 13px;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .root {
+        -fx-font-size: 12px;
+    }
+}
+
 /* Latar belakang untuk halaman login dengan gradasi dan pola garis diagonal */
 .login-background {
     -fx-background-color: linear-gradient(to bottom right, #216163, #2b7583);
-    -fx-background-image:
-            repeating-linear-gradient(45deg,
+    -fx-background-image: repeating-linear-gradient(
+            45deg,
             transparent,
             transparent 5px,
             rgba(255, 255, 255, 0.04) 5px,
             rgba(255, 255, 255, 0.04) 10px
-            );
+    );
 }
 
-/* Header styling */
+/* Header styling - Responsive */
 .header-box {
     -fx-background-color: #ffffff;
-    -fx-padding: 16 24 16 24;
-    -fx-border-color: #216163;
+    -fx-padding: 15 25 15 25;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 0 0 1 0;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 4, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
+    -fx-min-height: 70;
+    -fx-max-height: 80;
 }
 
 .header-title {
@@ -37,24 +52,36 @@
     -fx-text-fill: #216163;
 }
 
+.gawe-logo {
+    -fx-font-family: "Poppins", sans-serif;
+    -fx-font-size: 28px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #216163;
+    -fx-padding: 5 15 5 0;
+}
+
 .user-welcome-label {
     -fx-font-size: 16px;
-    -fx-text-fill: #216163;
+    -fx-text-fill: #666666;
     -fx-font-weight: 500;
     -fx-font-family: "Poppins";
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .logout-button {
     -fx-background-color: #ffffff;
     -fx-text-fill: #216163;
     -fx-background-radius: 8;
-    -fx-padding: 10 16 10 16;
+    -fx-padding: 10 20 10 20;
     -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
+    -fx-min-width: 100;
 }
 
 .logout-button:hover {
@@ -62,61 +89,116 @@
     -fx-text-fill: #ffffff;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 6, 0, 0, 2);
 }
 
-/* === PERUBAHAN SCROLL & RESPONSIVE DIMULAI === */
-/* Navigation sidebar */
+/* Navigation scroll pane */
+.navigation-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.navigation-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.navigation-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+.navigation-scroll .scroll-bar:vertical .track {
+    -fx-background-color: rgba(33, 97, 99, 0.1);
+    -fx-background-radius: 4;
+}
+
+.navigation-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #216163;
+    -fx-background-radius: 4;
+}
+
+/* Content scroll pane */
+.content-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.content-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.content-scroll .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-pref-width: 10;
+    -fx-pref-height: 10;
+}
+
+.content-scroll .scroll-bar .track {
+    -fx-background-color: rgba(33, 97, 99, 0.1);
+    -fx-background-radius: 5;
+}
+
+.content-scroll .scroll-bar .thumb {
+    -fx-background-color: #216163;
+    -fx-background-radius: 5;
+}
+
+/* Navigation sidebar - Wider and Responsive */
 .sidebar {
-    -fx-background-color: #ffffff;
-    -fx-min-width: 280px;
-    -fx-max-width: 280px;
-    -fx-border-color: #216163;
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 0 1 0 0;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 6, 0, 2, 0);
-    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal jika konten melebihi tinggi */
-    -fx-overflow-x: hidden; /* Mencegah scroll horizontal */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 4, 0, 2, 0);
+    -fx-padding: 0;
 }
 
-.navigation-sidebar {
-    -fx-background-color: #ffffff;
-    -fx-min-width: 280px;
-    -fx-max-width: 280px;
-    -fx-border-color: #216163;
-    -fx-border-width: 0 1 0 0;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 6, 0, 2, 0);
-    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal jika konten melebihi tinggi */
-    -fx-overflow-x: hidden; /* Mencegah scroll horizontal */
-}
-
-/* Content area */
+/* Content area - Responsive */
 .content-area {
     -fx-background-color: #ffffff;
-    -fx-padding: 30;
-    -fx-overflow-y: auto; /* Memungkinkan scroll vertikal untuk area konten */
+    -fx-padding: 25;
 }
-/* === PERUBAHAN SCROLL & RESPONSIVE SELESAI === */
 
-
-.sidebar-header {
+/* User info section in navigation */
+.user-info-section {
     -fx-background-color: #ffffff;
-    -fx-padding: 20;
-    -fx-alignment: center;
-    -fx-border-color: #216163;
-    -fx-border-width: 0 0 1 0;
+    -fx-background-radius: 12;
+    -fx-padding: 25 20 25 20;
+    -fx-spacing: 10;
+    -fx-border-radius: 12;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 4, 0, 0, 2);
 }
 
-.sidebar-title {
-    -fx-font-family: "The Seasons", serif;
-    -fx-font-size: 24px;
-    -fx-font-weight: 700;
+.user-avatar {
+    -fx-font-size: 40px;
     -fx-text-fill: #216163;
 }
 
-.sidebar-subtitle {
+.user-greeting {
     -fx-font-family: "Poppins";
-    -fx-font-size: 12px;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #216163;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+}
+
+.user-role {
+    -fx-font-family: "Poppins";
+    -fx-font-size: 14px;
     -fx-font-weight: 400;
-    -fx-text-fill: #2b7583;
+    -fx-text-fill: #666666;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+}
+
+/* Navigation buttons container */
+.nav-buttons-container {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }
 
 .nav-button {
@@ -125,100 +207,58 @@
     -fx-font-family: "Poppins";
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-    -fx-padding: 15 20;
+    -fx-padding: 15 20 15 20;
     -fx-alignment: center-left;
     -fx-cursor: hand;
     -fx-background-radius: 8;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 8;
-    -fx-margin: 5;
+    -fx-wrap-text: true;
+    -fx-text-alignment: left;
+    -fx-min-height: 45;
+    -fx-pref-width: 280;
 }
 
 .nav-button:hover {
     -fx-background-color: #216163;
     -fx-text-fill: #ffffff;
+    -fx-border-color: #216163;
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 4, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 6, 0, 0, 2);
 }
 
 .nav-button.active {
     -fx-background-color: #216163;
     -fx-text-fill: #ffffff;
-    -fx-border-color: #2b7583;
+    -fx-border-color: #216163;
     -fx-border-width: 2;
 }
 
-.nav-separator {
-    -fx-background-color: #216163;
-    -fx-pref-height: 1;
-    -fx-opacity: 0.3;
-}
-
-/* User info section in navigation */
-.user-info-section {
-    -fx-background-color: #f8fffe;
-    -fx-background-radius: 12;
-    -fx-padding: 16;
-    -fx-spacing: 8;
-    -fx-border-color: #216163;
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-}
-
-.user-avatar {
-    -fx-font-size: 32px;
-    -fx-text-fill: #216163;
-}
-
-.user-greeting {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 16px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #216163;
-}
-
-.user-role {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 12px;
-    -fx-font-weight: 400;
-    -fx-text-fill: #2b7583;
-}
-
-.nav-title {
-    -fx-font-family: "The Seasons", serif;
-    -fx-font-size: 16px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #216163;
-}
-
-/* Header Logo */
-.header-logo {
-    -fx-fit-height: 40;
-    -fx-fit-width: 120;
-    -fx-preserve-ratio: true;
-}
-
+/* Dashboard content container - Responsive */
 .dashboard-content-container {
     -fx-background-color: transparent;
-    -fx-padding: 24;
-    -fx-spacing: 24;
+    -fx-padding: 25;
+    -fx-spacing: 25;
 }
 
 .content-title {
-    -fx-font-family: "The Seasons", serif;
+    -fx-font-family: "Poppins", sans-serif;
     -fx-font-size: 32px;
-    -fx-font-weight: bold;
+    -fx-font-weight: 600;
     -fx-text-fill: #216163;
-    -fx-padding: 0 0 24 0;
+    -fx-padding: 0 0 20 0;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .page-title {
     -fx-font-family: "Poppins";
-    -fx-font-size: 28px;
+    -fx-font-size: 24px;
     -fx-font-weight: 700;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .page-subtitle {
@@ -226,21 +266,22 @@
     -fx-font-size: 14px;
     -fx-font-weight: 400;
     -fx-text-fill: #2b7583;
+    -fx-wrap-text: true;
 }
 
-/* Quick actions */
+/* Quick actions - Responsive */
 .quick-actions-box {
     -fx-background-color: #ffffff;
-    -fx-padding: 20;
+    -fx-padding: 25;
     -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
-    -fx-spacing: 16;
+    -fx-spacing: 15;
 }
 
-/* Action buttons */
+/* Action buttons - Responsive */
 .action-button-green {
     -fx-background-color: #ffffff;
     -fx-text-fill: #216163;
@@ -252,6 +293,8 @@
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 8;
+    -fx-wrap-text: true;
+    -fx-min-width: 120;
 }
 
 .action-button-green:hover {
@@ -263,19 +306,21 @@
 
 .action-button-red {
     -fx-background-color: #ffffff;
-    -fx-text-fill: #216163;
+    -fx-text-fill: #dc3545;
     -fx-background-radius: 8;
     -fx-padding: 12 20 12 20;
     -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-font-size: 14px;
-    -fx-border-color: #216163;
+    -fx-border-color: #dc3545;
     -fx-border-width: 1;
     -fx-border-radius: 8;
+    -fx-wrap-text: true;
+    -fx-min-width: 120;
 }
 
 .action-button-red:hover {
-    -fx-background-color: #216163;
+    -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
@@ -283,19 +328,43 @@
 
 .action-button-orange {
     -fx-background-color: #ffffff;
-    -fx-text-fill: #216163;
+    -fx-text-fill: #fd7e14;
     -fx-background-radius: 8;
     -fx-padding: 12 20 12 20;
     -fx-font-weight: 600;
     -fx-cursor: hand;
     -fx-font-size: 14px;
-    -fx-border-color: #216163;
+    -fx-border-color: #fd7e14;
     -fx-border-width: 1;
     -fx-border-radius: 8;
+    -fx-wrap-text: true;
+    -fx-min-width: 120;
 }
 
 .action-button-orange:hover {
-    -fx-background-color: #216163;
+    -fx-background-color: #fd7e14;
+    -fx-text-fill: #ffffff;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.action-button-blue {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #0d6efd;
+    -fx-background-radius: 8;
+    -fx-padding: 12 20 12 20;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+    -fx-border-color: #0d6efd;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-wrap-text: true;
+    -fx-min-width: 120;
+}
+
+.action-button-blue:hover {
+    -fx-background-color: #0d6efd;
     -fx-text-fill: #ffffff;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
@@ -312,6 +381,7 @@
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 6;
+    -fx-wrap-text: true;
 }
 
 .action-button-small-green:hover {
@@ -321,19 +391,20 @@
 
 .action-button-small-red {
     -fx-background-color: #ffffff;
-    -fx-text-fill: #216163;
+    -fx-text-fill: #dc3545;
     -fx-background-radius: 6;
     -fx-padding: 8 12 8 12;
     -fx-font-size: 12px;
     -fx-cursor: hand;
     -fx-font-weight: 600;
-    -fx-border-color: #216163;
+    -fx-border-color: #dc3545;
     -fx-border-width: 1;
     -fx-border-radius: 6;
+    -fx-wrap-text: true;
 }
 
 .action-button-small-red:hover {
-    -fx-background-color: #216163;
+    -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;
 }
 
@@ -348,6 +419,7 @@
     -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 6;
+    -fx-wrap-text: true;
 }
 
 .review-button:hover {
@@ -355,108 +427,101 @@
     -fx-text-fill: #ffffff;
 }
 
-/* Stats cards */
+/* Stats cards - Responsive */
 .stats-cards-container {
     -fx-background-color: transparent;
-    -fx-spacing: 16;
+    -fx-spacing: 20;
 }
 
 .stats-card {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-padding: 20;
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-padding: 25;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
+    -fx-min-width: 200;
+    -fx-pref-width: 220;
+    -fx-max-width: 280;
 }
 
 .stats-card:hover {
-    -fx-background-color: #f8fffe;
+    -fx-background-color: #f8f9fa;
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 12, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 12, 0, 0, 4);
 }
 
 .stats-card-icon {
-    -fx-font-size: 28px;
+    -fx-font-size: 32px;
     -fx-text-fill: #216163;
 }
 
 .stats-card-value {
     -fx-font-family: "Poppins";
-    -fx-font-size: 32px;
+    -fx-font-size: 36px;
     -fx-font-weight: 700;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .stats-card-title {
     -fx-font-family: "Poppins";
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-    -fx-text-fill: #2b7583;
+    -fx-text-fill: #666666;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
-.stats-number {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 32px;
-    -fx-font-weight: 700;
-    -fx-text-fill: #216163;
-}
-
-.stats-label {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-    -fx-text-fill: #2b7583;
-}
-
-.stats-icon {
-    -fx-font-size: 24px;
-}
-
-/* Recent activities section */
+/* Recent activities section - Responsive */
 .recent-activities-section {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
 }
 
 .section-title {
-    -fx-font-family: "The Seasons", serif;
+    -fx-font-family: "Poppins", sans-serif;
     -fx-font-size: 20px;
-    -fx-font-weight: bold;
+    -fx-font-weight: 600;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .activities-list {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-background-radius: 8;
+    -fx-min-height: 180;
+    -fx-max-height: 300;
 }
 
 .activities-list .list-cell {
     -fx-background-color: transparent;
-    -fx-padding: 8;
+    -fx-padding: 10;
     -fx-font-size: 14px;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .activities-list .list-cell:hover {
-    -fx-background-color: #f8fffe;
+    -fx-background-color: #f8f9fa;
     -fx-background-radius: 6;
 }
 
-/* Data tables */
+/* Data tables - Responsive */
 .table-view {
     -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
+    -fx-min-height: 300;
 }
 
 .table-view .column-header-background {
@@ -471,6 +536,7 @@
     -fx-font-weight: 600;
     -fx-font-size: 13px;
     -fx-padding: 12;
+    -fx-wrap-text: true;
 }
 
 .table-view .table-cell {
@@ -478,12 +544,13 @@
     -fx-font-size: 12px;
     -fx-text-fill: #216163;
     -fx-padding: 10;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 0 0 1 0;
+    -fx-wrap-text: true;
 }
 
 .table-row-cell:hover {
-    -fx-background-color: #f8fffe;
+    -fx-background-color: #f8f9fa;
 }
 
 .table-row-cell:selected {
@@ -492,28 +559,30 @@
 
 .data-table {
     -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
+    -fx-min-height: 300;
 }
 
-/* Forms */
+/* Forms - Responsive */
 .form-container {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
     -fx-padding: 25;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
 }
 
 .form-title {
-    -fx-font-family: "The Seasons", serif;
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
+    -fx-font-family: "Poppins", sans-serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: 600;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .form-label {
@@ -521,14 +590,15 @@
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 .kpi-set-form {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
     -fx-padding: 25;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
 }
@@ -541,7 +611,7 @@
     -fx-font-size: 13px;
     -fx-text-fill: #216163;
     -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -552,97 +622,34 @@
 .text-area:focused,
 .combo-box:focused,
 .date-picker:focused {
-    -fx-border-color: #2b7583;
+    -fx-border-color: #216163;
     -fx-border-width: 2;
-    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.3), 4, 0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 4, 0, 0, 0);
 }
 
-/* Buttons */
+/* Buttons - Responsive */
 .primary-button {
-    -fx-background-color: #ffffff;
-    -fx-text-fill: #216163;
+    -fx-background-color: #216163;
+    -fx-text-fill: #ffffff;
     -fx-font-family: "Poppins";
     -fx-font-weight: 600;
     -fx-font-size: 14px;
     -fx-padding: 12 20;
     -fx-background-radius: 8;
-    -fx-border-color: #216163;
-    -fx-border-width: 1;
-    -fx-border-radius: 8;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 6, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 6, 0, 0, 2);
+    -fx-wrap-text: true;
 }
 
 .primary-button:hover {
-    -fx-background-color: #216163;
-    -fx-text-fill: #ffffff;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 8, 0, 0, 3);
+    -fx-background-color: #2b7583;
+    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.3), 8, 0, 0, 3);
 }
 
-.secondary-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #216163;
-    -fx-font-family: "Poppins";
-    -fx-font-weight: 500;
-    -fx-font-size: 14px;
-    -fx-padding: 12 20;
-    -fx-background-radius: 8;
-    -fx-border-color: #216163;
-    -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-cursor: hand;
-}
-
-.secondary-button:hover {
-    -fx-background-color: #216163;
-    -fx-text-fill: #ffffff;
-}
-
-.danger-button {
-    -fx-background-color: #ffffff;
-    -fx-text-fill: #dc3545;
-    -fx-font-family: "Poppins";
-    -fx-font-weight: 600;
-    -fx-font-size: 14px;
-    -fx-padding: 12 20;
-    -fx-background-radius: 8;
-    -fx-border-color: #dc3545;
-    -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-cursor: hand;
-}
-
-.danger-button:hover {
-    -fx-background-color: #dc3545;
-    -fx-text-fill: #ffffff;
-}
-
-/* Welcome Section */
-.welcome-section {
-    -fx-background-color: linear-gradient(to bottom right, #216163, #2b7583);
-    -fx-background-radius: 12;
-    -fx-padding: 25;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 10, 0, 0, 4);
-}
-
-.welcome-title {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 24px;
-    -fx-font-weight: 700;
-    -fx-text-fill: #ffffff;
-}
-
-.welcome-subtitle {
-    -fx-font-family: "Poppins";
-    -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-text-fill: #b5f3ee;
-}
-
-/* Tab Pane */
+/* Tab Pane - Responsive */
 .custom-tab-pane {
     -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -650,7 +657,7 @@
 
 .custom-tab-pane .tab-header-area {
     -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -659,9 +666,11 @@
     -fx-text-fill: #216163;
     -fx-font-family: "Poppins";
     -fx-font-weight: 500;
-    -fx-border-color: #216163;
+    -fx-font-size: 13px;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-background-radius: 8 8 0 0;
+    -fx-padding: 10 15;
 }
 
 .custom-tab-pane .tab:selected {
@@ -670,15 +679,15 @@
 }
 
 .custom-tab-pane .tab:hover {
-    -fx-background-color: #f8fffe;
+    -fx-background-color: #f8f9fa;
 }
 
-/* Salary breakdown */
+/* Salary breakdown - Responsive */
 .salary-breakdown-box {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.1), 8, 0, 0, 2);
-    -fx-border-color: #216163;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 2);
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
     -fx-border-radius: 12;
 }
@@ -688,11 +697,12 @@
     -fx-font-size: 18px;
     -fx-font-weight: 700;
     -fx-text-fill: #216163;
+    -fx-wrap-text: true;
 }
 
 /* Slider styling */
 .slider .track {
-    -fx-background-color: #b5f3ee;
+    -fx-background-color: #e0e0e0;
     -fx-background-radius: 4;
     -fx-pref-height: 6;
 }
@@ -704,71 +714,7 @@
     -fx-pref-height: 16;
 }
 
-/* Text area */
-.text-area {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
-    -fx-text-fill: #216163;
-}
-
-.text-area:focused {
-    -fx-border-color: #2b7583;
-    -fx-border-width: 2;
-}
-
-/* List view */
-.list-view {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #216163;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-}
-
-.list-cell {
-    -fx-background-color: transparent;
-    -fx-padding: 10;
-    -fx-font-size: 14px;
-    -fx-text-fill: #216163;
-}
-
-.list-cell:hover {
-    -fx-background-color: #f8fffe;
-    -fx-background-radius: 6;
-}
-
-.list-cell:selected {
-    -fx-background-color: #216163;
-    -fx-text-fill: #ffffff;
-    -fx-background-radius: 6;
-}
-
-/* Separator */
-.separator {
-    -fx-background-color: #216163;
-    -fx-pref-height: 1;
-    -fx-opacity: 0.3;
-}
-
-/* Logo styling */
-.gawe-logo {
-    -fx-font-family: "The Seasons", serif;
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #216163;
-}
-
-/* Dialog styling */
-.dialog-pane {
-    -fx-background-color: #ffffff;
-    -fx-background-radius: 16;
-    -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.2), 16, 0, 0, 8);
-    -fx-border-color: #216163;
-    -fx-border-width: 1;
-    -fx-border-radius: 16;
-}
-
+/* Login styles */
 .login-container {
     -fx-background-color: rgba(239, 255, 255, 0.15);
     -fx-background-radius: 16;
@@ -843,17 +789,6 @@
     -fx-scale-y: 0.98;
 }
 
-.password-toggle-button {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-cursor: hand;
-    -fx-background-radius: 6;
-}
-
-.password-toggle-button:hover {
-    -fx-background-color: rgba(181, 243, 238, 0.3);
-}
-
 .demo-credentials {
     -fx-background-color: rgba(181, 243, 238, 0.2);
     -fx-background-radius: 10;
@@ -884,33 +819,144 @@
     -fx-font-size: 13px;
 }
 
-/* Responsive adjustments for 14-inch laptops */
+/* Responsive adjustments */
 @media screen and (max-width: 1366px) {
     .content-title {
         -fx-font-size: 28px;
     }
 
     .stats-card {
-        -fx-min-width: 200;
-        -fx-pref-width: 220;
+        -fx-min-width: 180;
+        -fx-pref-width: 200;
     }
 
-    .stats-number {
-        -fx-font-size: 28px;
+    .stats-card-value {
+        -fx-font-size: 30px;
+    }
+
+    .user-welcome-label {
+        -fx-font-size: 15px;
+    }
+
+    .nav-button {
+        -fx-font-size: 13px;
+        -fx-padding: 12 18 12 18;
     }
 }
 
-@media screen and (max-width: 1280px) {
+@media screen and (max-width: 1024px) {
     .content-area {
         -fx-padding: 20;
     }
 
-    .form-container {
+    .dashboard-content-container {
         -fx-padding: 20;
+        -fx-spacing: 20;
     }
 
     .stats-card {
-        -fx-min-width: 180;
-        -fx-pref-width: 200;
+        -fx-min-width: 160;
+        -fx-pref-width: 180;
+        -fx-padding: 20;
     }
+
+    .stats-card-value {
+        -fx-font-size: 26px;
+    }
+
+    .stats-card-icon {
+        -fx-font-size: 28px;
+    }
+
+    .content-title {
+        -fx-font-size: 24px;
+    }
+
+    .header-box {
+        -fx-padding: 12 20 12 20;
+    }
+
+    .user-welcome-label {
+        -fx-font-size: 14px;
+    }
+
+    .logout-button {
+        -fx-font-size: 12px;
+        -fx-padding: 8 15 8 15;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .sidebar {
+        -fx-min-width: 280;
+        -fx-max-width: 280;
+    }
+
+    .content-area {
+        -fx-padding: 15;
+    }
+
+    .dashboard-content-container {
+        -fx-padding: 15;
+        -fx-spacing: 15;
+    }
+
+    .stats-cards-container {
+        -fx-spacing: 15;
+    }
+
+    .stats-card {
+        -fx-min-width: 140;
+        -fx-pref-width: 160;
+        -fx-padding: 15;
+    }
+
+    .quick-actions-box {
+        -fx-padding: 20;
+        -fx-spacing: 12;
+    }
+
+    .action-button-green,
+    .action-button-red,
+    .action-button-orange,
+    .action-button-blue {
+        -fx-font-size: 12px;
+        -fx-padding: 10 15 10 15;
+        -fx-min-width: 100;
+    }
+}
+
+/* Scrollbar styling for all scroll panes */
+.scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+.scroll-pane .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-pref-height: 8;
+}
+
+.scroll-pane .scroll-bar .track {
+    -fx-background-color: rgba(0, 0, 0, 0.1);
+    -fx-background-radius: 4;
+}
+
+.scroll-pane .scroll-bar .thumb {
+    -fx-background-color: #216163;
+    -fx-background-radius: 4;
+}
+
+.scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: #2b7583;
+}
+
+/* Ensure content doesn't overflow */
+.scroll-pane {
+    -fx-fit-to-width: true;
+    -fx-fit-to-height: true;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
 }
