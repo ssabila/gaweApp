@@ -148,7 +148,7 @@ public class MySQLDatabaseManager {
                 divisi VARCHAR(50) NOT NULL,
                 bulan INT NOT NULL,
                 tahun INT NOT NULL,
-                file_path TEXT NOT NULL,
+                content TEXT NOT NULL,
                 upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 status ENUM('pending', 'reviewed', 'approved', 'rejected') DEFAULT 'pending',
                 manager_notes TEXT,
