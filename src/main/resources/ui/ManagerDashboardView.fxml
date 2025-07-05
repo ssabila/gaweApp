@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.ScrollPane?>
-<BorderPane fx:id="rootPane" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.ManagerDashboardController">
+<BorderPane fx:id="rootPane" minHeight="768.0" minWidth="1366.0" prefHeight="768.0" prefWidth="1366.0" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.ManagerDashboardController">l/1" fx:controller="ui.ManagerDashboardController">
     <top>
         <HBox alignment="CENTER_LEFT" styleClass="header-box">
             <children>

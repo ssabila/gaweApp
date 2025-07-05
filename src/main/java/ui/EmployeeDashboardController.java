@@ -378,6 +378,7 @@ public class EmployeeDashboardController {
     private TableView<Attendance> createMyAttendanceTable() {
         TableView<Attendance> table = new TableView<>();
         table.getStyleClass().add("data-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // PERUBAHAN DI SINI
 
         TableColumn<Attendance, String> dateCol = new TableColumn<>("📅 Date");
         dateCol.setCellValueFactory(cellData ->
@@ -427,6 +428,7 @@ public class EmployeeDashboardController {
     private TableView<Meeting> createMyMeetingsTable() {
         TableView<Meeting> table = new TableView<>();
         table.getStyleClass().add("data-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // PERUBAHAN DI SINI
 
         TableColumn<Meeting, String> titleCol = new TableColumn<>("📋 Title");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
@@ -482,6 +484,7 @@ public class EmployeeDashboardController {
     private TableView<LeaveRequest> createMyLeaveRequestsTable() {
         TableView<LeaveRequest> table = new TableView<>();
         table.getStyleClass().add("data-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // PERUBAHAN DI SINI
 
         TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
@@ -705,6 +708,7 @@ public class EmployeeDashboardController {
     private TableView<SalaryHistory> createSalaryHistoryTable() {
         TableView<SalaryHistory> table = new TableView<>();
         table.getStyleClass().add("data-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // PERUBAHAN DI SINI
 
         TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("📅 Month");
         monthCol.setCellValueFactory(cellData ->

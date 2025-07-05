@@ -543,7 +543,7 @@
     -fx-font-size: 12px;
     -fx-text-fill: #216163;
     -fx-padding: 10;
-    -fx-border-color: #216163;
+    -fx-border-color: #e0e0e0;
     -fx-border-width: 0 0 1 0;
     -fx-wrap-text: true;
 }
@@ -564,6 +564,20 @@
     -fx-background-radius: 8;
     -fx-min-height: 300;
 }
+
+/* --- PERUBAHAN DI SINI --- */
+/* Menghilangkan area abu-abu di bawah baris tabel */
+.table-view .filler {
+    -fx-background-color: white;
+}
+
+/* Menghilangkan border pada sel yang kosong */
+.table-view .table-cell:empty {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+}
+/* --- AKHIR PERUBAHAN --- */
+
 
 /* Forms - Responsive */
 .form-container {
@@ -642,7 +656,7 @@
 
 .primary-button:hover {
     -fx-background-color: #2b7583;
-    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.3), 8, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.4), 8, 0, 0, 3);
 }
 
 /* Tab Pane - Responsive */
