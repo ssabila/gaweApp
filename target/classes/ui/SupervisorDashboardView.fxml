@@ -3,36 +3,66 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<BorderPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.SupervisorDashboardController">
-    <left>
-        <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="navigation-scroll">
-            <content>
-                <VBox styleClass="sidebar" minWidth="320.0" maxWidth="320.0">
+<?import javafx.scene.control.ScrollPane?>
+<BorderPane fx:id="rootPane" stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.SupervisorDashboardController">
+    <top>
+        <HBox alignment="CENTER_LEFT" styleClass="header-box">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
                     <children>
-                        <!-- User Greeting Section -->
+                        <ImageView styleClass="header-logo" fitHeight="40.0" fitWidth="120.0" preserveRatio="true">
+                            <image>
+                                <Image url="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gawe-Xz7xtyUI2Njg08MWPTpiyUssVTC8HR.png" />
+                            </image>
+                        </ImageView>
+                    </children>
+                </HBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" />
+                <Button onAction="#handleLogout" styleClass="logout-button" text="🚪 Logout">
+                    <HBox.margin>
+                        <Insets left="20.0" />
+                    </HBox.margin>
+                </Button>
+            </children>
+        </HBox>
+    </top>
+    <left>
+        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" styleClass="content-scroll">
+            <content>
+                <VBox styleClass="navigation-sidebar">
+                    <padding>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                    <children>
+                        <!-- User Info Section -->
                         <VBox alignment="CENTER" styleClass="user-info-section">
                             <children>
                                 <Label styleClass="user-avatar" text="👨‍💼" />
                                 <Label fx:id="navUserGreeting" styleClass="user-greeting" text="Hello, Supervisor!" />
                                 <Label styleClass="user-role" text="Supervisor Dashboard" />
                             </children>
-                            <VBox.margin>
-                                <Insets bottom="20.0" left="15.0" right="15.0" top="15.0" />
-                            </VBox.margin>
                         </VBox>
 
-                        <!-- Navigation Buttons -->
-                        <VBox fx:id="navButtonContainer" spacing="8.0" styleClass="nav-buttons-container">
-                            <padding>
-                                <Insets bottom="20.0" left="15.0" right="15.0" top="10.0" />
-                            </padding>
+                        <Label styleClass="nav-title" text="👥 Team Management">
+                            <VBox.margin>
+                                <Insets top="20.0" />
+                            </VBox.margin>
+                        </Label>
+                        <Separator styleClass="nav-separator" />
+                        <VBox fx:id="navButtonContainer" spacing="8.0">
+                            <VBox.margin>
+                                <Insets top="12.0" />
+                            </VBox.margin>
                         </VBox>
                     </children>
                 </VBox>
@@ -40,32 +70,14 @@
         </ScrollPane>
     </left>
 
-    <top>
-        <HBox alignment="CENTER_LEFT" styleClass="header-box" spacing="20.0" BorderPane.alignment="CENTER">
-            <children>
-                <!-- Left side - Logo -->
-                <Label styleClass="gawe-logo" text="gawe" />
-
-                <!-- Center - Welcome message -->
-                <Label fx:id="userWelcomeLabel" styleClass="user-welcome-label" text="Welcome, [Supervisor Name]" HBox.hgrow="ALWAYS">
-                    <font>
-                        <Font name="Poppins Regular" size="16.0" />
-                    </font>
-                </Label>
-
-                <!-- Right side - Logout button -->
-                <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="🚪 Logout" />
-            </children>
-            <padding>
-                <Insets bottom="15.0" left="25.0" right="25.0" top="15.0" />
-            </padding>
-        </HBox>
-    </top>
-
     <center>
         <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" styleClass="content-scroll">
             <content>
-                <StackPane fx:id="contentArea" styleClass="content-area" minHeight="500.0" />
+                <StackPane fx:id="contentArea" styleClass="content-area">
+                    <padding>
+                        <Insets top="24.0" right="24.0" bottom="24.0" left="24.0" />
+                    </padding>
+                </StackPane>
             </content>
         </ScrollPane>
     </center>

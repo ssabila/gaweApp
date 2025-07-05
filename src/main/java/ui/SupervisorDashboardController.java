@@ -111,8 +111,7 @@ public class SupervisorDashboardController {
                     createNavButton("✅ Leave Approvals", this::showLeaveApprovalsContent),
                     createNavButton("🏖️ My Leave Requests", this::showMyLeaveRequests),
                     createNavButton("👥 Team Management", this::showTeamManagementContent),
-                    createNavButton("⭐ Team KPI Evaluation", this::showTeamKPIEvaluationContent), // NEW: KPI Evaluation
-                    createNavButton("📊 Monthly Evaluation", this::showMonthlyEvaluationContent),
+                    createNavButton("⭐ Monthly Evaluation", this::showMonthlyEvaluationContent),
                     createNavButton("📄 Upload Report", this::showUploadReportContent),
                     createNavButton("📈 Performance Analytics", this::showPerformanceAnalyticsContent),
                     createNavButton("💰 Salary Management", this::showSalaryManagementContent),
@@ -157,6 +156,8 @@ public class SupervisorDashboardController {
             logger.warning("Cannot show dashboard content - missing required objects");
             return;
         }
+
+        contentArea.getChildren().clear();
 
         VBox content = new VBox(20);
         content.setAlignment(Pos.TOP_CENTER);
@@ -278,17 +279,23 @@ public class SupervisorDashboardController {
 
             VBox teamSizeCard = createStatsCard("Team Size", String.valueOf(teamMembers.size()), "👥", "#3498db");
 
-            double avgKpi = teamMembers.stream().mapToDouble(Employee::getKpiScore).average().orElse(0.0);
+            double avgKpi = teamMembers.stream()
+                    .mapToDouble(Employee::getKpiScore)
+                    .average()
+                    .orElse(0.0);
             VBox avgKpiCard = createStatsCard("Avg KPI", String.format("%.1f%%", avgKpi), "📊", "#2ecc71");
 
-            long atRiskCount = teamMembers.stream().filter(Employee::isLayoffRisk).count();
+            long atRiskCount = teamMembers.stream()
+                    .filter(Employee::isLayoffRisk)
+                    .count();
             VBox atRiskCard = createStatsCard("At Risk", String.valueOf(atRiskCount), "⚠️", "#e74c3c");
 
-            // Get pending leave requests for this supervisor
-            List<LeaveRequest> pendingApprovals = dataStore.getLeaveRequestsForApproval(supervisor.getId());
-            VBox pendingApprovalsCard = createStatsCard("Pending Approvals", String.valueOf(pendingApprovals.size()), "✅", "#f39c12");
+            // Refresh supervisor object to get updated leave balance
+            Employee refreshedSupervisor = dataStore.authenticateUser(supervisor.getId(), supervisor.getPassword());
+            int supervisorLeaveDays = (refreshedSupervisor != null) ? refreshedSupervisor.getSisaCuti() : supervisor.getSisaCuti();
+            VBox leaveCard = createStatsCard("My Leave Days", String.valueOf(supervisorLeaveDays), "🏖️", "#9b59b6");
 
-            statsContainer.getChildren().addAll(teamSizeCard, avgKpiCard, atRiskCard, pendingApprovalsCard);
+            statsContainer.getChildren().addAll(teamSizeCard, avgKpiCard, atRiskCard, leaveCard);
         } catch (Exception e) {
             logger.severe("Error creating stats cards: " + e.getMessage());
         }
@@ -351,509 +358,19 @@ public class SupervisorDashboardController {
         return section;
     }
 
-    // NEW METHOD: Team KPI Evaluation Content
-    private void showTeamKPIEvaluationContent() {
-        if (supervisor == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("⭐ Team KPI Evaluation - " + supervisor.getDivisi());
-        title.getStyleClass().add("content-title");
-
-        VBox evaluationForm = createTeamKPIEvaluationForm();
-        TableView<Employee> teamKPITable = createTeamKPITable();
-
-        content.getChildren().addAll(title, evaluationForm, teamKPITable);
-        setScrollableContent(content);
-    }
-
-    // NEW METHOD: Create Team KPI Evaluation Form
-    private VBox createTeamKPIEvaluationForm() {
-        VBox form = new VBox(20);
-        form.setAlignment(Pos.CENTER);
-        form.setPadding(new Insets(30));
-        form.getStyleClass().add("kpi-set-form");
-
-        Label formTitle = new Label("📊 Evaluate Team Member KPI");
-        formTitle.getStyleClass().add("form-title");
-
-        GridPane formGrid = new GridPane();
-        formGrid.setHgap(20);
-        formGrid.setVgap(15);
-        formGrid.setAlignment(Pos.CENTER);
-
-        // Employee selection
-        ComboBox<Employee> employeeCombo = new ComboBox<>();
-        employeeCombo.setPromptText("Select Team Member");
-        employeeCombo.setCellFactory(listView -> new ListCell<Employee>() {
-            @Override
-            protected void updateItem(Employee item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getNama() + " (" + item.getJabatan() + ")");
-                }
-            }
-        });
-        employeeCombo.setButtonCell(new ListCell<Employee>() {
-            @Override
-            protected void updateItem(Employee item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getNama() + " (" + item.getJabatan() + ")");
-                }
-            }
-        });
-
-        // Load team members (employees only)
-        if (dataStore != null && supervisor != null) {
-            try {
-                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                        .filter(emp -> emp.getRole().equals("pegawai"))
-                        .collect(Collectors.toList());
-                employeeCombo.getItems().addAll(teamMembers);
-            } catch (Exception e) {
-                logger.severe("Error loading team members: " + e.getMessage());
-            }
-        }
-
-        // Month and Year selection
-        ComboBox<String> monthCombo = new ComboBox<>();
-        monthCombo.getItems().addAll("January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December");
-        monthCombo.setValue("December");
-
-        ComboBox<Integer> yearCombo = new ComboBox<>();
-        for (int year = 2020; year <= 2030; year++) {
-            yearCombo.getItems().add(year);
-        }
-        yearCombo.setValue(LocalDate.now().getYear());
-
-        // Performance Metrics
-        Slider punctualitySlider = new Slider(0, 100, 75);
-        punctualitySlider.setShowTickLabels(true);
-        punctualitySlider.setShowTickMarks(true);
-        punctualitySlider.setMajorTickUnit(25);
-
-        Label punctualityValue = new Label("75.0");
-        punctualitySlider.valueProperty().addListener((obs, oldVal, newVal) ->
-                punctualityValue.setText(String.format("%.1f", newVal.doubleValue())));
-
-        Slider attendanceSlider = new Slider(0, 100, 80);
-        attendanceSlider.setShowTickLabels(true);
-        attendanceSlider.setShowTickMarks(true);
-        attendanceSlider.setMajorTickUnit(25);
-
-        Label attendanceValue = new Label("80.0");
-        attendanceSlider.valueProperty().addListener((obs, oldVal, newVal) ->
-                attendanceValue.setText(String.format("%.1f", newVal.doubleValue())));
-
-        Slider productivitySlider = new Slider(0, 100, 75);
-        productivitySlider.setShowTickLabels(true);
-        productivitySlider.setShowTickMarks(true);
-        productivitySlider.setMajorTickUnit(25);
-
-        Label productivityValue = new Label("75.0");
-        productivitySlider.valueProperty().addListener((obs, oldVal, newVal) ->
-                productivityValue.setText(String.format("%.1f", newVal.doubleValue())));
-
-        // Comments
-        TextArea commentsArea = new TextArea();
-        commentsArea.setPromptText("Enter evaluation comments...");
-        commentsArea.setPrefRowCount(3);
-        commentsArea.setMaxWidth(400);
-
-        // Add to grid
-        formGrid.add(new Label("👤 Team Member:"), 0, 0);
-        formGrid.add(employeeCombo, 1, 0);
-        formGrid.add(new Label("📅 Month:"), 0, 1);
-        formGrid.add(monthCombo, 1, 1);
-        formGrid.add(new Label("📅 Year:"), 0, 2);
-        formGrid.add(yearCombo, 1, 2);
-        formGrid.add(new Label("⏰ Punctuality:"), 0, 3);
-        formGrid.add(punctualitySlider, 1, 3);
-        formGrid.add(punctualityValue, 2, 3);
-        formGrid.add(new Label("📊 Attendance:"), 0, 4);
-        formGrid.add(attendanceSlider, 1, 4);
-        formGrid.add(attendanceValue, 2, 4);
-        formGrid.add(new Label("💼 Productivity:"), 0, 5);
-        formGrid.add(productivitySlider, 1, 5);
-        formGrid.add(productivityValue, 2, 5);
-        formGrid.add(new Label("💬 Comments:"), 0, 6);
-        formGrid.add(commentsArea, 1, 6, 2, 1);
-
-        Button submitBtn = new Button("✅ Submit Evaluation");
-        submitBtn.getStyleClass().add("action-button-green");
-
-        submitBtn.setOnAction(e -> {
-            Employee selectedEmployee = employeeCombo.getValue();
-            if (selectedEmployee != null) {
-                try {
-                    int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
-                    int year = yearCombo.getValue();
-
-                    // Check if evaluation already exists
-                    if (dataStore.hasMonthlyEvaluation(selectedEmployee.getId(), month, year)) {
-                        showAlert(Alert.AlertType.WARNING, "Evaluation Exists",
-                                "An evaluation for this employee already exists for " + monthCombo.getValue() + " " + year);
-                        return;
-                    }
-
-                    double punctuality = punctualitySlider.getValue();
-                    double attendance = attendanceSlider.getValue();
-                    double productivity = productivitySlider.getValue();
-                    double overall = (punctuality + attendance + productivity) / 3;
-
-                    boolean success = dataStore.saveMonthlyEmployeeEvaluation(
-                            selectedEmployee.getId(),
-                            supervisor.getId(),
-                            month,
-                            year,
-                            punctuality,
-                            attendance,
-                            productivity,
-                            overall,
-                            commentsArea.getText()
-                    );
-
-                    if (success) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success",
-                                "Monthly evaluation for " + selectedEmployee.getNama() + " saved successfully!");
-
-                        // Reset form
-                        employeeCombo.setValue(null);
-                        punctualitySlider.setValue(75);
-                        attendanceSlider.setValue(80);
-                        productivitySlider.setValue(75);
-                        commentsArea.setText("");
-
-                        // Refresh team KPI table if it exists
-                        refreshTeamKPITable();
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation.");
-                    }
-                } catch (Exception ex) {
-                    logger.severe("Error saving monthly evaluation: " + ex.getMessage());
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation: " + ex.getMessage());
-                }
-            } else {
-                showAlert(Alert.AlertType.WARNING, "Warning", "Please select a team member.");
-            }
-        });
-
-        form.getChildren().addAll(formTitle, formGrid, submitBtn);
-        return form;
-    }
-
-    // NEW METHOD: Create Team KPI Table
-    private TableView<Employee> createTeamKPITable() {
-        TableView<Employee> table = new TableView<>();
-        table.getStyleClass().add("data-table");
-        table.setPrefHeight(400);
-
-        TableColumn<Employee, String> nameCol = new TableColumn<>("👤 Employee");
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
-        nameCol.setPrefWidth(150);
-
-        TableColumn<Employee, String> positionCol = new TableColumn<>("💼 Position");
-        positionCol.setCellValueFactory(new PropertyValueFactory<>("jabatan"));
-        positionCol.setPrefWidth(120);
-
-        TableColumn<Employee, String> kpiCol = new TableColumn<>("📊 Current KPI");
-        kpiCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
-        kpiCol.setPrefWidth(100);
-
-        TableColumn<Employee, String> supervisorRatingCol = new TableColumn<>("⭐ Supervisor Rating");
-        supervisorRatingCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
-        supervisorRatingCol.setPrefWidth(120);
-
-        TableColumn<Employee, String> riskCol = new TableColumn<>("⚠️ Risk Status");
-        riskCol.setCellValueFactory(cellData -> {
-            boolean isAtRisk = cellData.getValue().isLayoffRisk();
-            return new javafx.beans.property.SimpleStringProperty(isAtRisk ? "⚠️ At Risk" : "✅ Good");
-        });
-        riskCol.setPrefWidth(100);
-
-        table.getColumns().addAll(nameCol, positionCol, kpiCol, supervisorRatingCol, riskCol);
-
-        refreshTeamKPITable(table);
-
-        return table;
-    }
-
-    private void refreshTeamKPITable() {
-        // This method can be called to refresh any existing team KPI table
-        if (teamTable != null) {
-            refreshTeamKPITable(teamTable);
-        }
-    }
-
-    private void refreshTeamKPITable(TableView<Employee> table) {
-        if (dataStore != null && supervisor != null) {
-            try {
-                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                        .filter(emp -> emp.getRole().equals("pegawai"))
-                        .collect(Collectors.toList());
-                table.setItems(FXCollections.observableArrayList(teamMembers));
-            } catch (Exception e) {
-                logger.severe("Error loading team members for KPI table: " + e.getMessage());
-            }
-        }
-    }
-
-    // IMPROVED METHOD: Leave Approvals Content with better filtering
-    private void showLeaveApprovalsContent() {
-        if (supervisor == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("✅ Leave Request Approvals - Supervisor Level");
-        title.getStyleClass().add("content-title");
-
-        Label infoLabel = new Label("📋 You can approve leave requests from employees in your " + supervisor.getDivisi() + " division");
-        infoLabel.getStyleClass().add("page-subtitle");
-
-        if (leaveApprovalsTable == null) {
-            leaveApprovalsTable = createImprovedLeaveApprovalTable();
-        } else {
-            refreshLeaveApprovalsTable();
-        }
-
-        content.getChildren().addAll(title, infoLabel, leaveApprovalsTable);
-        setScrollableContent(content);
-    }
-
-    // IMPROVED METHOD: Create Enhanced Leave Approval Table
-    private TableView<LeaveRequest> createImprovedLeaveApprovalTable() {
-        TableView<LeaveRequest> table = new TableView<>();
-        table.getStyleClass().add("data-table");
-        table.setPrefHeight(400);
-
-        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("👤 Employee");
-        employeeCol.setCellValueFactory(cellData -> {
-            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
-            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
-        });
-        employeeCol.setPrefWidth(150);
-
-        TableColumn<LeaveRequest, String> positionCol = new TableColumn<>("💼 Position");
-        positionCol.setCellValueFactory(cellData -> {
-            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
-            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getJabatan() : "Unknown");
-        });
-        positionCol.setPrefWidth(120);
-
-        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Leave Type");
-        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
-        typeCol.setPrefWidth(120);
-
-        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start Date");
-        startDateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
-        startDateCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("📅 End Date");
-        endDateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
-        endDateCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
-        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
-        daysCol.setPrefWidth(70);
-
-        TableColumn<LeaveRequest, String> reasonCol = new TableColumn<>("📋 Reason");
-        reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
-        reasonCol.setPrefWidth(200);
-
-        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("⚡ Actions");
-        actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
-            private final HBox actionBox = new HBox(5);
-            private final Button approveBtn = new Button("✅ Approve");
-            private final Button rejectBtn = new Button("❌ Reject");
-
-            {
-                approveBtn.getStyleClass().add("action-button-small-green");
-                rejectBtn.getStyleClass().add("action-button-small-red");
-
-                actionBox.getChildren().addAll(approveBtn, rejectBtn);
-                actionBox.setAlignment(Pos.CENTER);
-
-                approveBtn.setOnAction(e -> {
-                    LeaveRequest request = getTableView().getItems().get(getIndex());
-                    showLeaveApprovalDialog(request, true);
-                });
-
-                rejectBtn.setOnAction(e -> {
-                    LeaveRequest request = getTableView().getItems().get(getIndex());
-                    showLeaveApprovalDialog(request, false);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : actionBox);
-            }
-        });
-        actionCol.setPrefWidth(150);
-
-        table.getColumns().addAll(employeeCol, positionCol, typeCol, startDateCol, endDateCol, daysCol, reasonCol, actionCol);
-
-        refreshLeaveApprovalsTable(table);
-
-        return table;
-    }
-
-    private void refreshLeaveApprovalsTable() {
-        if (leaveApprovalsTable != null) {
-            refreshLeaveApprovalsTable(leaveApprovalsTable);
-        }
-    }
-
-    private void refreshLeaveApprovalsTable(TableView<LeaveRequest> table) {
-        if (dataStore != null && supervisor != null) {
-            try {
-                System.out.println("=== SUPERVISOR LEAVE APPROVALS DEBUG ===");
-                System.out.println("Supervisor: " + supervisor.getNama() + " (ID: " + supervisor.getId() + ")");
-                System.out.println("Division: " + supervisor.getDivisi());
-                System.out.println("Role: " + supervisor.getRole());
-
-                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(supervisor.getId());
-                System.out.println("Found " + pendingRequests.size() + " pending requests for approval");
-
-                for (LeaveRequest req : pendingRequests) {
-                    Employee emp = dataStore.getEmployeeById(req.getEmployeeId());
-                    System.out.println("- Request from: " + (emp != null ? emp.getNama() + " (" + emp.getDivisi() + ")" : req.getEmployeeId()));
-                }
-
-                table.setItems(FXCollections.observableArrayList(pendingRequests));
-            } catch (Exception e) {
-                logger.severe("Error loading leave requests for approval: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-    }
-
-    // NEW METHOD: Show Leave Approval Dialog
-    private void showLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
-        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
-        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
-
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(isApproval ? "✅ Approve Leave Request" : "❌ Reject Leave Request");
-        dialog.setHeaderText((isApproval ? "Approve" : "Reject") + " leave request from " + employeeName);
-
-        VBox content = new VBox(15);
-        content.setPadding(new Insets(20));
-
-        // Request details
-        GridPane detailsGrid = new GridPane();
-        detailsGrid.setHgap(15);
-        detailsGrid.setVgap(10);
-
-        detailsGrid.add(new Label("👤 Employee:"), 0, 0);
-        detailsGrid.add(new Label(employeeName), 1, 0);
-
-        detailsGrid.add(new Label("💼 Position:"), 0, 1);
-        detailsGrid.add(new Label(requestingEmployee != null ? requestingEmployee.getJabatan() : "Unknown"), 1, 1);
-
-        detailsGrid.add(new Label("📝 Leave Type:"), 0, 2);
-        detailsGrid.add(new Label(request.getLeaveType()), 1, 2);
-
-        detailsGrid.add(new Label("📅 Start Date:"), 0, 3);
-        detailsGrid.add(new Label(sdf.format(request.getStartDate())), 1, 3);
-
-        detailsGrid.add(new Label("📅 End Date:"), 0, 4);
-        detailsGrid.add(new Label(sdf.format(request.getEndDate())), 1, 4);
-
-        detailsGrid.add(new Label("📊 Total Days:"), 0, 5);
-        detailsGrid.add(new Label(String.valueOf(request.getTotalDays())), 1, 5);
-
-        detailsGrid.add(new Label("📋 Reason:"), 0, 6);
-        Label reasonLabel = new Label(request.getReason());
-        reasonLabel.setWrapText(true);
-        reasonLabel.setMaxWidth(300);
-        detailsGrid.add(reasonLabel, 1, 6);
-
-        // Notes area
-        Label notesLabel = new Label("💬 " + (isApproval ? "Approval" : "Rejection") + " Notes:");
-        TextArea notesArea = new TextArea();
-        notesArea.setPromptText("Enter your notes here...");
-        notesArea.setPrefRowCount(4);
-        notesArea.setMaxWidth(400);
-
-        content.getChildren().addAll(
-                new Label("📋 Request Details:"),
-                detailsGrid,
-                new Separator(),
-                notesLabel,
-                notesArea
-        );
-
-        dialog.getDialogPane().setContent(content);
-
-        ButtonType confirmButton = new ButtonType(isApproval ? "✅ Approve" : "❌ Reject", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        dialog.getDialogPane().getButtonTypes().addAll(confirmButton, cancelButton);
-
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == confirmButton) {
-                if (notesArea.getText().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.WARNING, "Missing Notes", "Please provide notes for your decision.");
-                    return;
-                }
-
-                try {
-                    boolean success;
-                    if (isApproval) {
-                        success = dataStore.approveLeaveRequest(request.getId(), supervisor.getId(), notesArea.getText());
-                    } else {
-                        success = dataStore.rejectLeaveRequest(request.getId(), supervisor.getId(), notesArea.getText());
-                    }
-
-                    if (success) {
-                        String action = isApproval ? "approved" : "rejected";
-                        showAlert(Alert.AlertType.INFORMATION, "Success",
-                                "Leave request " + action + " successfully!");
-                        refreshLeaveApprovalsTable();
-                        // Refresh dashboard stats
-                        showDashboardContent();
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request.");
-                    }
-                } catch (Exception e) {
-                    logger.severe("Error processing leave request: " + e.getMessage());
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request: " + e.getMessage());
-                }
-            }
-        });
-    }
-
-    // Other existing methods remain the same...
+    // Personal Features
     private void showMyAttendance() {
         if (supervisor == null || dataStore == null || contentArea == null) {
             return;
         }
 
+        contentArea.getChildren().clear();
+
         VBox content = new VBox(20);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("⏰ My Attendance");
+        Label title = new Label("My Attendance");
         title.getStyleClass().add("content-title");
 
         TableView<Attendance> attendanceTable = createMyAttendanceTable();
@@ -866,17 +383,17 @@ public class SupervisorDashboardController {
         TableView<Attendance> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<Attendance, String> dateCol = new TableColumn<>("📅 Date");
+        TableColumn<Attendance, String> dateCol = new TableColumn<>("Date");
         dateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
 
-        TableColumn<Attendance, String> clockInCol = new TableColumn<>("⏰ Clock In");
+        TableColumn<Attendance, String> clockInCol = new TableColumn<>("Clock In");
         clockInCol.setCellValueFactory(new PropertyValueFactory<>("jamMasuk"));
 
-        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("🏃 Clock Out");
+        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("Clock Out");
         clockOutCol.setCellValueFactory(new PropertyValueFactory<>("jamKeluar"));
 
-        TableColumn<Attendance, String> statusCol = new TableColumn<>("📊 Status");
+        TableColumn<Attendance, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         table.getColumns().addAll(dateCol, clockInCol, clockOutCol, statusCol);
@@ -899,11 +416,13 @@ public class SupervisorDashboardController {
             return;
         }
 
+        contentArea.getChildren().clear();
+
         VBox content = new VBox(20);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("📅 My Meetings");
+        Label title = new Label("My Meetings");
         title.getStyleClass().add("content-title");
 
         Button newMeetingBtn = new Button("➕ Schedule New Meeting");
@@ -920,19 +439,19 @@ public class SupervisorDashboardController {
         TableView<Meeting> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<Meeting, String> titleCol = new TableColumn<>("📋 Title");
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
 
-        TableColumn<Meeting, String> dateCol = new TableColumn<>("📅 Date");
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
         dateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
 
-        TableColumn<Meeting, String> timeCol = new TableColumn<>("⏰ Time");
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
         timeCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(
                         cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
 
-        TableColumn<Meeting, String> locationCol = new TableColumn<>("📍 Location");
+        TableColumn<Meeting, String> locationCol = new TableColumn<>("Location");
         locationCol.setCellValueFactory(new PropertyValueFactory<>("lokasi"));
 
         table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol);
@@ -952,8 +471,8 @@ public class SupervisorDashboardController {
 
     private void showNewMeetingDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("📅 Schedule New Meeting");
-        dialog.setHeaderText("Create a new meeting for your team");
+        dialog.setTitle("Schedule New Meeting");
+        dialog.setHeaderText("Create a new meeting");
 
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
@@ -980,12 +499,12 @@ public class SupervisorDashboardController {
         locationField.setPromptText("Meeting location...");
 
         content.getChildren().addAll(
-                new Label("📋 Title:"), titleField,
-                new Label("📝 Description:"), descriptionArea,
-                new Label("📅 Date:"), datePicker,
-                new Label("⏰ Start Time:"), startTimeField,
-                new Label("⏰ End Time:"), endTimeField,
-                new Label("📍 Location:"), locationField
+                new Label("Title:"), titleField,
+                new Label("Description:"), descriptionArea,
+                new Label("Date:"), datePicker,
+                new Label("Start Time:"), startTimeField,
+                new Label("End Time:"), endTimeField,
+                new Label("Location:"), locationField
         );
 
         dialog.getDialogPane().setContent(content);
@@ -1034,11 +553,13 @@ public class SupervisorDashboardController {
             return;
         }
 
+        contentArea.getChildren().clear();
+
         VBox content = new VBox(20);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("🏖️ My Leave Requests");
+        Label title = new Label("My Leave Requests");
         title.getStyleClass().add("content-title");
 
         Button newRequestBtn = new Button("➕ New Leave Request");
@@ -1055,24 +576,24 @@ public class SupervisorDashboardController {
         TableView<LeaveRequest> table = new TableView<>();
         table.getStyleClass().add("data-table");
 
-        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Type");
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
 
-        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start Date");
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
         startDateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
 
-        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("📅 End Date");
+        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("End Date");
         endDateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
 
-        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
         daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
 
-        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("✅ Status");
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("📋 Approval Notes");
+        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("Approval Notes");
         notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
 
         table.getColumns().addAll(typeCol, startDateCol, endDateCol, daysCol, statusCol, notesCol);
@@ -1096,8 +617,8 @@ public class SupervisorDashboardController {
         }
 
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("🏖️ Request Leave");
-        dialog.setHeaderText("Submit a new leave request (will be approved by Manager)");
+        dialog.setTitle("Request Leave");
+        dialog.setHeaderText("Submit a new leave request");
 
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
@@ -1140,10 +661,10 @@ public class SupervisorDashboardController {
         reasonArea.setPrefRowCount(3);
 
         content.getChildren().addAll(
-                new Label("📝 Leave Type:"), leaveTypeCombo,
-                new Label("📅 Start Date (No weekends):"), startDatePicker,
-                new Label("📅 End Date (No weekends):"), endDatePicker,
-                new Label("📋 Reason:"), reasonArea
+                new Label("Leave Type:"), leaveTypeCombo,
+                new Label("Start Date (No weekends):"), startDatePicker,
+                new Label("End Date (No weekends):"), endDatePicker,
+                new Label("Reason:"), reasonArea
         );
 
         dialog.getDialogPane().setContent(content);
@@ -1163,6 +684,7 @@ public class SupervisorDashboardController {
                         return;
                     }
 
+                    // FIX: Use java.util.Date instead of java.sql.Date
                     Date startUtilDate = java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     Date endUtilDate = java.util.Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -1170,9 +692,8 @@ public class SupervisorDashboardController {
                         boolean success = dataStore.saveLeaveRequest(supervisor.getId(), leaveTypeCombo.getValue(),
                                 startUtilDate, endUtilDate, reasonArea.getText());
                         if (success) {
-                            showAlert(Alert.AlertType.INFORMATION, "Success",
-                                    "Leave request submitted successfully!\nIt will be reviewed by the Manager.");
-                            showMyLeaveRequests();
+                            showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
+                            showMyLeaveRequests(); // Refresh
                         } else {
                             showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
                         }
@@ -1188,22 +709,181 @@ public class SupervisorDashboardController {
         });
     }
 
-    // Dummy implementations for other methods to keep the class complete
-    private void showTeamManagementContent() {
-        // Implementation stays the same as before
+    // Supervisor-specific features
+    private void showLeaveApprovalsContent() {
         if (supervisor == null || dataStore == null || contentArea == null) {
             return;
         }
+
+        contentArea.getChildren().clear();
 
         VBox content = new VBox(20);
         content.setAlignment(Pos.TOP_CENTER);
         content.getStyleClass().add("dashboard-content-container");
 
-        Label title = new Label("👥 Team Management - " + supervisor.getDivisi() + " Division");
+        Label title = new Label("Leave Request Approvals");
         title.getStyleClass().add("content-title");
 
-        Button addEmployeeBtn = new Button("➕ Add Employee");
-        addEmployeeBtn.getStyleClass().add("action-button-green");
+        if (leaveApprovalsTable == null) {
+            leaveApprovalsTable = createLeaveApprovalTable();
+        }
+
+        content.getChildren().addAll(title, leaveApprovalsTable);
+        setScrollableContent(content);
+    }
+
+    private TableView<LeaveRequest> createLeaveApprovalTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("End Date");
+        endDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> reasonCol = new TableColumn<>("Reason");
+        reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
+
+        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("Actions");
+        actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
+            private final Button approveBtn = new Button("✅ Approve");
+            private final Button rejectBtn = new Button("❌ Reject");
+            private final HBox actionBox = new HBox(5, approveBtn, rejectBtn);
+
+            {
+                approveBtn.getStyleClass().add("action-button-small-green");
+                rejectBtn.getStyleClass().add("action-button-small-red");
+
+                approveBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showLeaveApprovalDialog(request, true);
+                });
+
+                rejectBtn.setOnAction(e -> {
+                    LeaveRequest request = getTableView().getItems().get(getIndex());
+                    showLeaveApprovalDialog(request, false);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : actionBox);
+            }
+        });
+
+        table.getColumns().addAll(employeeCol, typeCol, startDateCol, endDateCol, daysCol, reasonCol, actionCol);
+
+        refreshLeaveApprovalsTable(table);
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void refreshLeaveApprovalsTable(TableView<LeaveRequest> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(pendingRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading leave requests for approval: " + e.getMessage());
+            }
+        }
+    }
+
+    private void showLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(isApproval ? "Approve Leave Request" : "Reject Leave Request");
+
+        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
+        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
+
+        dialog.setHeaderText((isApproval ? "Approve" : "Reject") + " leave request from " + employeeName);
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+
+        // Request summary
+        VBox summaryBox = new VBox(5);
+        summaryBox.getChildren().addAll(
+                new Label("Employee: " + employeeName + " (" + request.getEmployeeId() + ")"),
+                new Label("Leave Type: " + request.getLeaveType()),
+                new Label("Period: " + sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate())),
+                new Label("Total Days: " + request.getTotalDays()),
+                new Label("Reason: " + request.getReason())
+        );
+
+        // Supervisor notes
+        Label notesLabel = new Label("Supervisor Notes:");
+        TextArea notesArea = new TextArea();
+        notesArea.setPromptText("Enter your " + (isApproval ? "approval" : "rejection") + " notes...");
+        notesArea.setPrefRowCount(4);
+
+        content.getChildren().addAll(summaryBox, new Separator(), notesLabel, notesArea);
+
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType actionButton = new ButtonType(isApproval ? "Approve" : "Reject", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(actionButton, cancelButton);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == actionButton) {
+                String notes = notesArea.getText().trim();
+                if (notes.isEmpty()) {
+                    notes = isApproval ? "Approved by supervisor" : "Rejected by supervisor";
+                }
+
+                boolean success;
+                if (isApproval) {
+                    success = dataStore.approveLeaveRequest(request.getId(), supervisor.getId(), notes);
+                } else {
+                    success = dataStore.rejectLeaveRequest(request.getId(), supervisor.getId(), notes);
+                }
+
+                if (success) {
+                    showAlert(Alert.AlertType.INFORMATION, "Success",
+                            "Leave request " + (isApproval ? "approved" : "rejected") + " successfully!");
+                    showLeaveApprovalsContent(); // Refresh the view
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Error",
+                            "Failed to " + (isApproval ? "approve" : "reject") + " leave request.");
+                }
+            }
+        });
+    }
+
+    private void showTeamManagementContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Team Management - " + supervisor.getDivisi() + " Division");
+        title.getStyleClass().add("content-title");
+
+        Button addEmployeeBtn = new Button("Add Employee");
         addEmployeeBtn.setOnAction(e -> showAddEmployeeDialog());
 
         if (teamTable == null) {
@@ -1217,21 +897,41 @@ public class SupervisorDashboardController {
     private TableView<Employee> createTeamTable() {
         TableView<Employee> table = new TableView<>();
         table.getStyleClass().add("data-table");
-        table.setPrefHeight(400);
 
-        TableColumn<Employee, String> nameCol = new TableColumn<>("👤 Name");
+        TableColumn<Employee, String> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
 
-        TableColumn<Employee, String> positionCol = new TableColumn<>("💼 Position");
+        TableColumn<Employee, String> positionCol = new TableColumn<>("Position");
         positionCol.setCellValueFactory(new PropertyValueFactory<>("jabatan"));
 
-        TableColumn<Employee, String> kpiCol = new TableColumn<>("📊 KPI Score");
+        TableColumn<Employee, String> kpiCol = new TableColumn<>("KPI Score");
         kpiCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
 
-        table.getColumns().addAll(nameCol, positionCol, kpiCol);
+        TableColumn<Employee, String> ratingCol = new TableColumn<>("Supervisor Rating");
+        ratingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
 
-        // Load team data
+        TableColumn<Employee, String> riskCol = new TableColumn<>("At Risk");
+        riskCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().isLayoffRisk() ? "⚠️ Yes" : "✅ No"));
+
+        TableColumn<Employee, String> salaryCol = new TableColumn<>("Current Salary");
+        salaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(idCol, nameCol, positionCol, kpiCol, ratingCol, riskCol, salaryCol);
+
+        refreshTeamTable(table);
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void refreshTeamTable(TableView<Employee> table) {
         if (dataStore != null && supervisor != null) {
             try {
                 List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
@@ -1242,16 +942,833 @@ public class SupervisorDashboardController {
                 logger.severe("Error loading team members: " + e.getMessage());
             }
         }
+    }
 
+    private void showMonthlyEvaluationContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Monthly Employee Evaluation");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab evaluateTab = new Tab("Evaluate Employee", createMonthlyEvaluationForm());
+        Tab historyTab = new Tab("Evaluation History", createEvaluationHistoryTable());
+
+        evaluateTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(evaluateTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
+        setScrollableContent(content);
+    }
+
+    private VBox createMonthlyEvaluationForm() {
+        VBox form = new VBox(20);
+        form.setAlignment(Pos.CENTER);
+        form.setPadding(new Insets(30));
+        form.getStyleClass().add("kpi-set-form");
+
+        Label formTitle = new Label("Evaluate Team Member");
+        formTitle.getStyleClass().add("form-title");
+
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(20);
+        formGrid.setVgap(15);
+        formGrid.setAlignment(Pos.CENTER);
+
+        ComboBox<Employee> employeeCombo = new ComboBox<>();
+        try {
+            List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                    .filter(emp -> emp.getRole().equals("pegawai"))
+                    .collect(Collectors.toList());
+            employeeCombo.getItems().addAll(teamMembers);
+        } catch (Exception e) {
+            logger.severe("Error loading team members for evaluation: " + e.getMessage());
+        }
+
+        employeeCombo.setConverter(new javafx.util.StringConverter<Employee>() {
+            @Override
+            public String toString(Employee employee) {
+                return employee != null ? employee.getNama() + " (" + employee.getId() + ")" : "";
+            }
+
+            @Override
+            public Employee fromString(String string) {
+                return null;
+            }
+        });
+
+        ComboBox<String> monthCombo = new ComboBox<>();
+        monthCombo.getItems().addAll("January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December");
+        monthCombo.setValue("December");
+
+        ComboBox<Integer> yearCombo = new ComboBox<>();
+        for (int year = 2020; year <= 2030; year++) {
+            yearCombo.getItems().add(year);
+        }
+        yearCombo.setValue(LocalDate.now().getYear());
+
+        Slider punctualitySlider = new Slider(0, 100, 75);
+        punctualitySlider.setShowTickLabels(true);
+        punctualitySlider.setShowTickMarks(true);
+        punctualitySlider.setMajorTickUnit(25);
+
+        Label punctualityValue = new Label("75.0");
+        punctualitySlider.valueProperty().addListener((obs, oldVal, newVal) ->
+                punctualityValue.setText(String.format("%.1f", newVal.doubleValue())));
+
+        Slider attendanceSlider = new Slider(0, 100, 75);
+        attendanceSlider.setShowTickLabels(true);
+        attendanceSlider.setShowTickMarks(true);
+        attendanceSlider.setMajorTickUnit(25);
+
+        Label attendanceValue = new Label("75.0");
+        attendanceSlider.valueProperty().addListener((obs, oldVal, newVal) ->
+                attendanceValue.setText(String.format("%.1f", newVal.doubleValue())));
+
+        Slider productivitySlider = new Slider(0, 100, 75);
+        productivitySlider.setShowTickLabels(true);
+        productivitySlider.setShowTickMarks(true);
+        productivitySlider.setMajorTickUnit(25);
+
+        Label productivityValue = new Label("75.0");
+        productivitySlider.valueProperty().addListener((obs, oldVal, newVal) ->
+                productivityValue.setText(String.format("%.1f", newVal.doubleValue())));
+
+        TextArea commentsArea = new TextArea();
+        commentsArea.setPromptText("Evaluation comments...");
+        commentsArea.setPrefRowCount(3);
+
+        int row = 0;
+        formGrid.add(new Label("Employee:"), 0, row);
+        formGrid.add(employeeCombo, 1, row++);
+        formGrid.add(new Label("Month:"), 0, row);
+        formGrid.add(monthCombo, 1, row++);
+        formGrid.add(new Label("Year:"), 0, row);
+        formGrid.add(yearCombo, 1, row++);
+        formGrid.add(new Label("Punctuality Score:"), 0, row);
+        formGrid.add(punctualitySlider, 1, row);
+        formGrid.add(punctualityValue, 2, row++);
+        formGrid.add(new Label("Attendance Score:"), 0, row);
+        formGrid.add(attendanceSlider, 1, row);
+        formGrid.add(attendanceValue, 2, row++);
+        formGrid.add(new Label("Productivity Score:"), 0, row);
+        formGrid.add(productivitySlider, 1, row);
+        formGrid.add(productivityValue, 2, row++);
+        formGrid.add(new Label("Comments:"), 0, row);
+        formGrid.add(commentsArea, 1, row, 2, 1);
+
+        Button submitBtn = new Button("Submit Evaluation");
+        submitBtn.getStyleClass().add("action-button-green");
+
+        submitBtn.setOnAction(e -> {
+            if (employeeCombo.getValue() != null) {
+                Employee selectedEmployee = employeeCombo.getValue();
+                int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
+                int year = yearCombo.getValue();
+
+                try {
+                    // Check if evaluation already exists
+                    if (dataStore.hasMonthlyEvaluation(selectedEmployee.getId(), month, year)) {
+                        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                        confirmAlert.setTitle("Evaluation Exists");
+                        confirmAlert.setContentText("Monthly evaluation for this employee already exists. Do you want to update it?");
+                        if (confirmAlert.showAndWait().get() != ButtonType.OK) {
+                            return;
+                        }
+                    }
+
+                    double punctuality = punctualitySlider.getValue();
+                    double attendance = attendanceSlider.getValue();
+                    double productivity = productivitySlider.getValue();
+                    double overall = (punctuality + attendance + productivity) / 3;
+
+                    boolean success = dataStore.saveMonthlyEmployeeEvaluation(
+                            selectedEmployee.getId(),
+                            supervisor.getId(),
+                            month,
+                            year,
+                            punctuality,
+                            attendance,
+                            productivity,
+                            overall,
+                            commentsArea.getText()
+                    );
+
+                    if (success) {
+                        showAlert(Alert.AlertType.INFORMATION, "Success", "Monthly evaluation saved successfully!");
+                        employeeCombo.setValue(null);
+                        punctualitySlider.setValue(75);
+                        attendanceSlider.setValue(75);
+                        productivitySlider.setValue(75);
+                        commentsArea.clear();
+                        refreshEvaluationHistoryTable();
+                        refreshTeamTable(teamTable);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation.");
+                    }
+                } catch (Exception ex) {
+                    logger.severe("Error saving evaluation: " + ex.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to save evaluation: " + ex.getMessage());
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "Warning", "Please select an employee.");
+            }
+        });
+
+        form.getChildren().addAll(formTitle, formGrid, submitBtn);
+        return form;
+    }
+
+    private TableView<MySQLDataStore.MonthlyEvaluation> createEvaluationHistoryTable() {
+        TableView<MySQLDataStore.MonthlyEvaluation> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(new PropertyValueFactory<>("month"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> punctualityCol = new TableColumn<>("Punctuality");
+        punctualityCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getPunctualityScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> attendanceCol = new TableColumn<>("Attendance");
+        attendanceCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getAttendanceScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> productivityCol = new TableColumn<>("Productivity");
+        productivityCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getProductivityScore()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> overallCol = new TableColumn<>("Overall Rating");
+        overallCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getOverallRating()) + "%"));
+
+        table.getColumns().addAll(employeeCol, monthCol, yearCol, punctualityCol, attendanceCol, productivityCol, overallCol);
+
+        if (evaluationsHistoryTable == null) {
+            evaluationsHistoryTable = table;
+        }
+
+        refreshEvaluationHistoryTable(table);
+
+        table.setPrefHeight(400);
         return table;
     }
 
-    // Other dummy methods
-    private void showMonthlyEvaluationContent() { /* Implementation */ }
-    private void showUploadReportContent() { /* Implementation */ }
-    private void showPerformanceAnalyticsContent() { /* Implementation */ }
-    private void showSalaryManagementContent() { /* Implementation */ }
-    private void showAllHistoryContent() { /* Implementation */ }
+    private void refreshEvaluationHistoryTable() {
+        if (evaluationsHistoryTable != null) {
+            refreshEvaluationHistoryTable(evaluationsHistoryTable);
+        }
+    }
+
+    private void refreshEvaluationHistoryTable(TableView<MySQLDataStore.MonthlyEvaluation> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<MySQLDataStore.MonthlyEvaluation> evaluations = dataStore.getMonthlyEvaluationsBySupervisor(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(evaluations));
+            } catch (Exception e) {
+                logger.severe("Error loading evaluation history: " + e.getMessage());
+            }
+        }
+    }
+
+    private void showUploadReportContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Upload Monthly Report");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab uploadTab = new Tab("Upload Report", createReportUploadForm());
+        Tab historyTab = new Tab("Report History", createReportHistoryTable());
+
+        uploadTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(uploadTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
+        setScrollableContent(content);
+    }
+
+    private VBox createReportUploadForm() {
+        VBox form = new VBox(20);
+        form.setAlignment(Pos.CENTER);
+        form.setPadding(new Insets(30));
+        form.getStyleClass().add("kpi-set-form");
+
+        Label formTitle = new Label("Upload Division Report");
+        formTitle.getStyleClass().add("form-title");
+
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(20);
+        formGrid.setVgap(15);
+        formGrid.setAlignment(Pos.CENTER);
+
+        Label divisionLabel = new Label("Division: " + supervisor.getDivisi());
+        divisionLabel.setStyle("-fx-font-weight: bold;");
+
+        ComboBox<String> monthCombo = new ComboBox<>();
+        monthCombo.getItems().addAll("January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December");
+        monthCombo.setValue("December");
+
+        ComboBox<Integer> yearCombo = new ComboBox<>();
+        for (int year = 2020; year <= 2030; year++) {
+            yearCombo.getItems().add(year);
+        }
+        yearCombo.setValue(LocalDate.now().getYear());
+
+        TextField filePathField = new TextField();
+        filePathField.setPromptText("Select report file...");
+        filePathField.setEditable(false);
+
+        Button browseBtn = new Button("Browse");
+        browseBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Report File");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf"),
+                    new FileChooser.ExtensionFilter("Word Files", "*.docx", "*.doc"),
+                    new FileChooser.ExtensionFilter("All Files", "*.*")
+            );
+            File selectedFile = fileChooser.showOpenDialog(stage);
+            if (selectedFile != null) {
+                filePathField.setText(selectedFile.getAbsolutePath());
+            }
+        });
+
+        int row = 0;
+        formGrid.add(new Label("Division:"), 0, row);
+        formGrid.add(divisionLabel, 1, row++);
+        formGrid.add(new Label("Month:"), 0, row);
+        formGrid.add(monthCombo, 1, row++);
+        formGrid.add(new Label("Year:"), 0, row);
+        formGrid.add(yearCombo, 1, row++);
+        formGrid.add(new Label("Report File:"), 0, row);
+        HBox fileBox = new HBox(10, filePathField, browseBtn);
+        filePathField.setPrefWidth(300);
+        formGrid.add(fileBox, 1, row);
+
+        Button uploadBtn = new Button("Upload Report");
+        uploadBtn.getStyleClass().add("action-button-green");
+
+        uploadBtn.setOnAction(e -> {
+            if (!filePathField.getText().isEmpty()) {
+                try {
+                    int month = monthCombo.getSelectionModel().getSelectedIndex() + 1;
+                    int year = yearCombo.getValue();
+
+                    boolean success = dataStore.saveReport(
+                            supervisor.getId(),
+                            supervisor.getDivisi(),
+                            month,
+                            year,
+                            filePathField.getText()
+                    );
+
+                    if (success) {
+                        showAlert(Alert.AlertType.INFORMATION, "Success", "Report uploaded successfully!");
+                        filePathField.clear();
+                        refreshReportHistoryTable();
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report.");
+                    }
+                } catch (Exception ex) {
+                    logger.severe("Error uploading report: " + ex.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to upload report: " + ex.getMessage());
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "Warning", "Please select a report file.");
+            }
+        });
+
+        form.getChildren().addAll(formTitle, formGrid, uploadBtn);
+        return form;
+    }
+
+    private TableView<Report> createReportHistoryTable() {
+        TableView<Report> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Report, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+
+        TableColumn<Report, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+
+        TableColumn<Report, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<Report, String> uploadDateCol = new TableColumn<>("Upload Date");
+        uploadDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getUploadDate())));
+
+        TableColumn<Report, String> notesCol = new TableColumn<>("Manager Notes");
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("managerNotes"));
+
+        table.getColumns().addAll(monthCol, yearCol, statusCol, uploadDateCol, notesCol);
+
+        if (reportHistoryTable == null) {
+            reportHistoryTable = table;
+        }
+
+        refreshReportHistoryTable(table);
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void refreshReportHistoryTable() {
+        if (reportHistoryTable != null) {
+            refreshReportHistoryTable(reportHistoryTable);
+        }
+    }
+
+    private void refreshReportHistoryTable(TableView<Report> table) {
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Report> myReports = dataStore.getReportsByDivision(supervisor.getDivisi());
+                table.setItems(FXCollections.observableArrayList(myReports));
+            } catch (Exception e) {
+                logger.severe("Error loading report history: " + e.getMessage());
+            }
+        }
+    }
+
+    private void showPerformanceAnalyticsContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Performance Analytics - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        // Team Performance Overview
+        HBox performanceCards = createPerformanceOverviewCards();
+
+        // Performance Details Table
+        TableView<Employee> performanceTable = createPerformanceDetailsTable();
+
+        content.getChildren().addAll(title, performanceCards, performanceTable);
+        setScrollableContent(content);
+    }
+
+    private HBox createPerformanceOverviewCards() {
+        HBox cardsContainer = new HBox(20);
+        cardsContainer.setAlignment(Pos.CENTER);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                double avgKpi = teamMembers.stream().mapToDouble(Employee::getKpiScore).average().orElse(0.0);
+                double avgRating = teamMembers.stream().mapToDouble(Employee::getSupervisorRating).average().orElse(0.0);
+                long highPerformers = teamMembers.stream().filter(emp -> emp.getKpiScore() >= 80 && emp.getSupervisorRating() >= 80).count();
+                long underPerformers = teamMembers.stream().filter(emp -> emp.getKpiScore() < 60 || emp.getSupervisorRating() < 60).count();
+
+                VBox avgKpiCard = createStatsCard("Average KPI", String.format("%.1f%%", avgKpi), "📊", "#3498db");
+                VBox avgRatingCard = createStatsCard("Average Rating", String.format("%.1f%%", avgRating), "⭐", "#2ecc71");
+                VBox highPerformersCard = createStatsCard("High Performers", String.valueOf(highPerformers), "🏆", "#f39c12");
+                VBox underPerformersCard = createStatsCard("Need Improvement", String.valueOf(underPerformers), "⚠️", "#e74c3c");
+
+                cardsContainer.getChildren().addAll(avgKpiCard, avgRatingCard, highPerformersCard, underPerformersCard);
+            } catch (Exception e) {
+                logger.severe("Error creating performance overview cards: " + e.getMessage());
+            }
+        }
+
+        return cardsContainer;
+    }
+
+    private TableView<Employee> createPerformanceDetailsTable() {
+        TableView<Employee> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Employee");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
+
+        TableColumn<Employee, String> kpiCol = new TableColumn<>("KPI Score");
+        kpiCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
+
+        TableColumn<Employee, String> ratingCol = new TableColumn<>("Supervisor Rating");
+        ratingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
+
+        TableColumn<Employee, String> attendanceCol = new TableColumn<>("Attendance Score");
+        attendanceCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getAttendanceScore()) + "%"));
+
+        TableColumn<Employee, String> performanceCol = new TableColumn<>("Performance Level");
+        performanceCol.setCellValueFactory(cellData -> {
+            Employee emp = cellData.getValue();
+            double avgScore = (emp.getKpiScore() + emp.getSupervisorRating()) / 2;
+            String level;
+            if (avgScore >= 90) level = "🏆 Excellent";
+            else if (avgScore >= 80) level = "⭐ Good";
+            else if (avgScore >= 70) level = "✅ Satisfactory";
+            else if (avgScore >= 60) level = "⚠️ Needs Improvement";
+            else level = "❌ Poor";
+            return new javafx.beans.property.SimpleStringProperty(level);
+        });
+
+        TableColumn<Employee, String> salaryCol = new TableColumn<>("Current Salary");
+        salaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(nameCol, kpiCol, ratingCol, attendanceCol, performanceCol, salaryCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+                table.setItems(FXCollections.observableArrayList(teamMembers));
+            } catch (Exception e) {
+                logger.severe("Error loading performance details: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void showSalaryManagementContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Salary Management - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab teamSalaryTab = new Tab("Team Salary Overview", createTeamSalaryTable());
+        Tab salaryHistoryTab = new Tab("Salary History", createTeamSalaryHistoryTable());
+
+        teamSalaryTab.setClosable(false);
+        salaryHistoryTab.setClosable(false);
+
+        tabPane.getTabs().addAll(teamSalaryTab, salaryHistoryTab);
+
+        content.getChildren().addAll(title, tabPane);
+        setScrollableContent(content);
+    }
+
+    private TableView<Employee> createTeamSalaryTable() {
+        TableView<Employee> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Employee");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
+
+        TableColumn<Employee, String> positionCol = new TableColumn<>("Position");
+        positionCol.setCellValueFactory(new PropertyValueFactory<>("jabatan"));
+
+        TableColumn<Employee, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getGajiPokok())));
+
+        TableColumn<Employee, String> kpiCol = new TableColumn<>("KPI Score");
+        kpiCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
+
+        TableColumn<Employee, String> ratingCol = new TableColumn<>("Rating");
+        ratingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
+
+        TableColumn<Employee, String> currentSalaryCol = new TableColumn<>("Current Total Salary");
+        currentSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(nameCol, positionCol, baseSalaryCol, kpiCol, ratingCol, currentSalaryCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+                table.setItems(FXCollections.observableArrayList(teamMembers));
+            } catch (Exception e) {
+                logger.severe("Error loading team salary data: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private TableView<SalaryHistory> createTeamSalaryHistoryTable() {
+        TableView<SalaryHistory> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<SalaryHistory, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+
+        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+
+        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getBaseSalary())));
+
+        TableColumn<SalaryHistory, String> kpiBonusCol = new TableColumn<>("KPI Bonus");
+        kpiBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getKpiBonus())));
+
+        TableColumn<SalaryHistory, String> supervisorBonusCol = new TableColumn<>("Supervisor Bonus");
+        supervisorBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getSupervisorBonus())));
+
+        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("Total Salary");
+        totalSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getTotalSalary())));
+
+        table.getColumns().addAll(employeeCol, monthCol, yearCol, baseSalaryCol, kpiBonusCol, supervisorBonusCol, totalSalaryCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                // Get salary history for team members
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                List<SalaryHistory> teamSalaryHistory = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getSalaryHistoryByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamSalaryHistory));
+            } catch (Exception e) {
+                logger.severe("Error loading team salary history: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void showAllHistoryContent() {
+        if (supervisor == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("All History - " + supervisor.getDivisi());
+        title.getStyleClass().add("content-title");
+
+        TabPane historyTabs = new TabPane();
+        historyTabs.getStyleClass().add("custom-tab-pane");
+
+        Tab reportsTab = new Tab("Reports", createReportHistoryTable());
+        Tab evaluationsTab = new Tab("Evaluations", createEvaluationHistoryTable());
+        Tab leaveRequestsTab = new Tab("Leave Requests", createTeamLeaveRequestsTable());
+        Tab meetingsTab = new Tab("Meetings", createTeamMeetingsTable());
+        Tab attendanceTab = new Tab("Team Attendance", createTeamAttendanceTable());
+
+        reportsTab.setClosable(false);
+        evaluationsTab.setClosable(false);
+        leaveRequestsTab.setClosable(false);
+        meetingsTab.setClosable(false);
+        attendanceTab.setClosable(false);
+
+        historyTabs.getTabs().addAll(reportsTab, evaluationsTab, leaveRequestsTab, meetingsTab, attendanceTab);
+
+        content.getChildren().addAll(title, historyTabs);
+        setScrollableContent(content);
+    }
+
+    private TableView<LeaveRequest> createTeamLeaveRequestsTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<LeaveRequest, String> requestDateCol = new TableColumn<>("Request Date");
+        requestDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getRequestDate())));
+
+        table.getColumns().addAll(employeeCol, typeCol, startDateCol, daysCol, statusCol, requestDateCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                // Get leave requests for team members
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                List<LeaveRequest> teamLeaveRequests = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getLeaveRequestsByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamLeaveRequests));
+            } catch (Exception e) {
+                logger.severe("Error loading team leave requests: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
+        return table;
+    }
+
+    private TableView<Meeting> createTeamMeetingsTable() {
+        TableView<Meeting> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
+
+        TableColumn<Meeting, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("lokasi"));
+
+        TableColumn<Meeting, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(titleCol, dateCol, timeCol, locationCol, statusCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                List<Meeting> myMeetings = dataStore.getMeetingsByEmployee(supervisor.getId());
+                table.setItems(FXCollections.observableArrayList(myMeetings));
+            } catch (Exception e) {
+                logger.severe("Error loading team meetings: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
+        return table;
+    }
+
+    private TableView<Attendance> createTeamAttendanceTable() {
+        TableView<Attendance> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Attendance, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<Attendance, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Attendance, String> clockInCol = new TableColumn<>("Clock In");
+        clockInCol.setCellValueFactory(new PropertyValueFactory<>("jamMasuk"));
+
+        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("Clock Out");
+        clockOutCol.setCellValueFactory(new PropertyValueFactory<>("jamKeluar"));
+
+        TableColumn<Attendance, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(employeeCol, dateCol, clockInCol, clockOutCol, statusCol);
+
+        if (dataStore != null && supervisor != null) {
+            try {
+                // Get attendance for team members (last 30 days)
+                List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
+                        .filter(emp -> emp.getRole().equals("pegawai"))
+                        .collect(Collectors.toList());
+
+                List<Attendance> teamAttendance = teamMembers.stream()
+                        .flatMap(emp -> dataStore.getAttendanceByEmployee(emp.getId()).stream())
+                        .collect(Collectors.toList());
+
+                table.setItems(FXCollections.observableArrayList(teamAttendance));
+            } catch (Exception e) {
+                logger.severe("Error loading team attendance: " + e.getMessage());
+            }
+        }
+
+        table.setPrefHeight(350);
+        return table;
+    }
 
     private void showAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
@@ -1267,7 +1784,7 @@ public class SupervisorDashboardController {
         }
 
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("👤 Edit Profile");
+        dialog.setTitle("Edit Profile");
         dialog.setHeaderText("Update your name and password.");
 
         GridPane grid = new GridPane();
@@ -1281,12 +1798,13 @@ public class SupervisorDashboardController {
         PasswordField passwordField = new PasswordField();
         passwordField.setText(supervisor.getPassword());
 
-        grid.add(new Label("👤 Name:"), 0, 0);
+        grid.add(new Label("Name:"), 0, 0);
         grid.add(nameField, 1, 0);
-        grid.add(new Label("🔒 Password:"), 0, 1);
+        grid.add(new Label("Password:"), 0, 1);
         grid.add(passwordField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
+
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.showAndWait().ifPresent(result -> {
@@ -1306,7 +1824,7 @@ public class SupervisorDashboardController {
 
     private void showAddEmployeeDialog() {
         Dialog<Employee> dialog = new Dialog<>();
-        dialog.setTitle("➕ Add New Employee");
+        dialog.setTitle("Add New Employee");
         dialog.setHeaderText("Enter new employee details for the " + supervisor.getDivisi() + " division.");
 
         ButtonType addButton = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
@@ -1323,13 +1841,17 @@ public class SupervisorDashboardController {
         passwordField.setPromptText("Password");
         TextField positionField = new TextField();
         positionField.setPromptText("Position");
+        TextField salaryField = new TextField();
+        salaryField.setPromptText("Base Salary");
 
-        grid.add(new Label("👤 Name:"), 0, 0);
+        grid.add(new Label("Name:"), 0, 0);
         grid.add(nameField, 1, 0);
-        grid.add(new Label("🔒 Password:"), 0, 1);
+        grid.add(new Label("Password:"), 0, 1);
         grid.add(passwordField, 1, 1);
-        grid.add(new Label("💼 Position:"), 0, 2);
+        grid.add(new Label("Position:"), 0, 2);
         grid.add(positionField, 1, 2);
+        grid.add(new Label("Base Salary:"), 0, 3);
+        grid.add(salaryField, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -1337,41 +1859,41 @@ public class SupervisorDashboardController {
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addButton) {
-                if (nameField.getText().isEmpty() || passwordField.getText().isEmpty() || positionField.getText().isEmpty()) {
+                if (nameField.getText().isEmpty() || passwordField.getText().isEmpty() || positionField.getText().isEmpty() || salaryField.getText().isEmpty()) {
                     showAlert(Alert.AlertType.WARNING, "Invalid Input", "Please fill in all fields.");
                     return null;
                 }
-                Employee newEmployee = new Employee();
-                newEmployee.setNama(nameField.getText());
-                newEmployee.setPassword(passwordField.getText());
-                newEmployee.setJabatan(positionField.getText());
-                newEmployee.setDivisi(supervisor.getDivisi());
-                newEmployee.setRole("pegawai");
-                newEmployee.setTglMasuk(new Date());
-                newEmployee.setSisaCuti(12);
-                newEmployee.setGajiPokok(4800000.0);
-                newEmployee.setKpiScore(75.0);
-                newEmployee.setSupervisorRating(75.0);
-                newEmployee.setAttendanceScore(100.0);
-                newEmployee.setOverallRating(75.0);
-                newEmployee.setLayoffRisk(false);
-                return newEmployee;
+                try {
+                    Employee newEmployee = new Employee();
+                    newEmployee.setNama(nameField.getText());
+                    newEmployee.setPassword(passwordField.getText());
+                    newEmployee.setJabatan(positionField.getText());
+                    newEmployee.setGajiPokok(Double.parseDouble(salaryField.getText()));
+                    newEmployee.setDivisi(supervisor.getDivisi());
+                    newEmployee.setRole("pegawai");
+                    newEmployee.setTglMasuk(new Date());
+                    newEmployee.setSisaCuti(12);
+                    newEmployee.setKpiScore(75.0); // Default KPI Score
+                    newEmployee.setSupervisorRating(75.0); // Default Supervisor Rating
+                    newEmployee.setAttendanceScore(100.0); // Default Attendance Score
+                    newEmployee.setOverallRating(75.0); // Default Overall Rating
+                    newEmployee.setLayoffRisk(false);
+                    return newEmployee;
+                } catch (NumberFormatException e) {
+                    showAlert(Alert.AlertType.ERROR, "Invalid Input", "Please enter a valid number for salary.");
+                    return null;
+                }
             }
             return null;
         });
 
         Optional<Employee> result = dialog.showAndWait();
+
         result.ifPresent(newEmployee -> {
             try {
                 dataStore.addEmployee(newEmployee);
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Employee added successfully!");
-                if (teamTable != null) {
-                    // Refresh team table
-                    List<Employee> teamMembers = dataStore.getEmployeesByDivision(supervisor.getDivisi()).stream()
-                            .filter(emp -> emp.getRole().equals("pegawai"))
-                            .collect(Collectors.toList());
-                    teamTable.setItems(FXCollections.observableArrayList(teamMembers));
-                }
+                refreshTeamTable(teamTable);
             } catch (Exception e) {
                 showAlert(Alert.AlertType.ERROR, "Error", "Failed to add employee: " + e.getMessage());
             }

@@ -90,6 +90,7 @@ public class ManagerDashboardController {
         }
     }
 
+
     // PERBAIKAN UTAMA: Menambahkan metode setScrollableContent()
     private void setScrollableContent(Region contentNode) {
         contentArea.getChildren().clear();
@@ -148,7 +149,6 @@ public class ManagerDashboardController {
         Platform.exit();
     }
 
-    // PERBAIKAN: Menggunakan setScrollableContent()
     private void showDashboardContent() {
         if (manager == null || dataStore == null || contentArea == null) {
             logger.warning("Cannot show dashboard content - missing required objects");
@@ -271,9 +271,7 @@ public class ManagerDashboardController {
         try {
             List<Employee> allEmployees = dataStore.getAllEmployees();
             List<Report> pendingReports = dataStore.getPendingReports();
-
-            // Get pending leave requests for manager approval (supervisors + employees)
-            List<LeaveRequest> pendingLeaves = dataStore.getLeaveRequestsForApproval(manager.getId());
+            List<LeaveRequest> pendingLeaves = dataStore.getPendingLeaveRequests();
 
             // Refresh manager object to get updated leave balance
             Employee refreshedManager = dataStore.authenticateUser(manager.getId(), manager.getPassword());
@@ -281,7 +279,7 @@ public class ManagerDashboardController {
 
             VBox totalEmployeesCard = createStatsCard("Total Employees", String.valueOf(allEmployees.size()), "👥", "#3498db");
             VBox pendingReportsCard = createStatsCard("Pending Reports", String.valueOf(pendingReports.size()), "📄", "#e74c3c");
-            VBox pendingLeavesCard = createStatsCard("Leave Approvals", String.valueOf(pendingLeaves.size()), "🏖️", "#f39c12");
+            VBox pendingLeavesCard = createStatsCard("Pending Leaves", String.valueOf(pendingLeaves.size()), "🏖️", "#f39c12");
             VBox myLeaveCard = createStatsCard("My Leave Days", String.valueOf(managerLeaveDays), "🌴", "#9b59b6");
 
             statsContainer.getChildren().addAll(totalEmployeesCard, pendingReportsCard, pendingLeavesCard, myLeaveCard);
@@ -296,24 +294,19 @@ public class ManagerDashboardController {
         VBox card = new VBox(10);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(20));
+        card.setPrefSize(200, 120);
         card.getStyleClass().add("stats-card");
-        card.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
-        card.setPrefWidth(180);
-        card.setPrefHeight(120);
+        card.setStyle(String.format("-fx-border-color: %s; -fx-border-width: 0 0 4 0;", color));
 
         Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 24px;");
-        iconLabel.setTextFill(Color.WHITE);
+        iconLabel.getStyleClass().add("stats-card-icon");
 
         Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
-        valueLabel.setTextFill(Color.WHITE);
+        valueLabel.getStyleClass().add("stats-card-value");
+        valueLabel.setStyle(String.format("-fx-text-fill: %s;", color));
 
         Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-font-size: 12px;");
-        titleLabel.setTextFill(Color.WHITE);
-        titleLabel.setWrapText(true);
-        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.getStyleClass().add("stats-card-title");
 
         card.getChildren().addAll(iconLabel, valueLabel, titleLabel);
         return card;
@@ -350,7 +343,7 @@ public class ManagerDashboardController {
         return section;
     }
 
-    // PERBAIKAN: Menggunakan setScrollableContent()
+    // Personal Features
     private void showMyAttendance() {
         if (manager == null || dataStore == null || contentArea == null) {
             return;
@@ -401,7 +394,6 @@ public class ManagerDashboardController {
         return table;
     }
 
-    // PERBAIKAN: Menggunakan setScrollableContent()
     private void showMyMeetings() {
         if (manager == null || dataStore == null || contentArea == null) {
             return;
@@ -536,7 +528,6 @@ public class ManagerDashboardController {
         });
     }
 
-    // PERBAIKAN: Menggunakan setScrollableContent()
     private void showMyLeaveRequests() {
         if (manager == null || dataStore == null || contentArea == null) {
             return;
@@ -671,6 +662,7 @@ public class ManagerDashboardController {
                         return;
                     }
 
+                    // FIX: Use java.util.Date instead of java.sql.Date
                     Date startUtilDate = java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     Date endUtilDate = java.util.Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -679,7 +671,7 @@ public class ManagerDashboardController {
                                 startUtilDate, endUtilDate, reasonArea.getText());
                         if (success) {
                             showAlert(Alert.AlertType.INFORMATION, "Success", "Leave request submitted successfully!");
-                            showMyLeaveRequests();
+                            showMyLeaveRequests(); // Refresh
                         } else {
                             showAlert(Alert.AlertType.ERROR, "Error", "Failed to submit leave request.");
                         }
@@ -695,7 +687,7 @@ public class ManagerDashboardController {
         });
     }
 
-    // PERBAIKAN: Menggunakan setScrollableContent() untuk semua metode lainnya
+    // Manager-specific features
     private void showKPIManagementContent() {
         if (manager == null || dataStore == null || contentArea == null) {
             return;
@@ -724,167 +716,9 @@ public class ManagerDashboardController {
         tabPane.getTabs().addAll(setKpiTab, kpiHistoryTab);
 
         content.getChildren().addAll(title, tabPane);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
-    }
-
-    private void showReportReviewsContent() {
-        if (manager == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("Report Reviews");
-        title.getStyleClass().add("content-title");
-
-        TabPane tabPane = new TabPane();
-        tabPane.getStyleClass().add("custom-tab-pane");
-
-        if (pendingReportsTable == null) {
-            pendingReportsTable = createPendingReportsTable();
-        }
-        Tab pendingTab = new Tab("Pending Reports", pendingReportsTable);
-
-        if (reportHistoryTable == null) {
-            reportHistoryTable = createReportHistoryTable();
-        }
-        Tab historyTab = new Tab("Report History", reportHistoryTable);
-
-        pendingTab.setClosable(false);
-        historyTab.setClosable(false);
-
-        tabPane.getTabs().addAll(pendingTab, historyTab);
-
-        content.getChildren().addAll(title, tabPane);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
-    }
-
-    private void showEvaluationHistoryContent() {
-        if (manager == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("Evaluation History");
-        title.getStyleClass().add("content-title");
-
-        TabPane tabPane = new TabPane();
-        tabPane.getStyleClass().add("custom-tab-pane");
-
-        Tab monthlyEvaluationsTab = new Tab("Monthly Evaluations", createMonthlyEvaluationsTable());
-        Tab regularEvaluationsTab = new Tab("Regular Evaluations", createRegularEvaluationsTable());
-
-        monthlyEvaluationsTab.setClosable(false);
-        regularEvaluationsTab.setClosable(false);
-
-        tabPane.getTabs().addAll(monthlyEvaluationsTab, regularEvaluationsTab);
-
-        content.getChildren().addAll(title, tabPane);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
-    }
-
-    private void showLeaveApprovalsContent() {
-        if (manager == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("🏖️ Leave Request Approvals - Manager Level");
-        title.getStyleClass().add("content-title");
-
-        Label infoLabel = new Label("📋 As a Manager, you can approve leave requests from Supervisors and all Employees");
-        infoLabel.getStyleClass().add("page-subtitle");
-
-        TabPane tabPane = new TabPane();
-        tabPane.getStyleClass().add("custom-tab-pane");
-
-        // Pending Approvals Tab
-        Tab pendingTab = new Tab("⏳ Pending Approvals", createManagerLeaveApprovalTable());
-
-        // Approval History Tab
-        Tab historyTab = new Tab("📋 Approval History", createManagerLeaveApprovalHistoryTable());
-
-        pendingTab.setClosable(false);
-        historyTab.setClosable(false);
-
-        tabPane.getTabs().addAll(pendingTab, historyTab);
-
-        content.getChildren().addAll(title, infoLabel, tabPane);
         setScrollableContent(content);
     }
 
-    private void showSalaryManagementContent() {
-        if (manager == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("Salary Management");
-        title.getStyleClass().add("content-title");
-
-        TabPane tabPane = new TabPane();
-        tabPane.getStyleClass().add("custom-tab-pane");
-
-        Tab salaryOverviewTab = new Tab("Salary Overview", createSalaryOverviewTable());
-        Tab salaryHistoryTab = new Tab("Salary History", createAllSalaryHistoryTable());
-
-        salaryOverviewTab.setClosable(false);
-        salaryHistoryTab.setClosable(false);
-
-        tabPane.getTabs().addAll(salaryOverviewTab, salaryHistoryTab);
-
-        content.getChildren().addAll(title, tabPane);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
-    }
-
-    private void showAllHistoryContent() {
-        if (manager == null || dataStore == null || contentArea == null) {
-            return;
-        }
-
-        VBox content = new VBox(20);
-        content.setAlignment(Pos.TOP_CENTER);
-        content.getStyleClass().add("dashboard-content-container");
-
-        Label title = new Label("All History & Records");
-        title.getStyleClass().add("content-title");
-
-        TabPane historyTabs = new TabPane();
-        historyTabs.getStyleClass().add("custom-tab-pane");
-
-        Tab kpiHistoryTab = new Tab("KPI History", createKPIHistoryTable());
-        Tab reportsHistoryTab = new Tab("Reports", createReportHistoryTable());
-        Tab evaluationsHistoryTab = new Tab("Evaluations", createMonthlyEvaluationsTable());
-        Tab leaveHistoryTab = new Tab("Leave Requests", createAllLeaveRequestsTable());
-        Tab meetingsHistoryTab = new Tab("Meetings", createAllMeetingsTable());
-        Tab attendanceHistoryTab = new Tab("Attendance", createAllAttendanceTable());
-
-        kpiHistoryTab.setClosable(false);
-        reportsHistoryTab.setClosable(false);
-        evaluationsHistoryTab.setClosable(false);
-        leaveHistoryTab.setClosable(false);
-        meetingsHistoryTab.setClosable(false);
-        attendanceHistoryTab.setClosable(false);
-
-        historyTabs.getTabs().addAll(kpiHistoryTab, reportsHistoryTab, evaluationsHistoryTab,
-                leaveHistoryTab, meetingsHistoryTab, attendanceHistoryTab);
-
-        content.getChildren().addAll(title, historyTabs);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
-    }
-
-    // Implementasi method helper - Saya akan menambahkan beberapa method yang diperlukan
     private VBox createKPISetForm() {
         VBox form = new VBox(20);
         form.setAlignment(Pos.CENTER);
@@ -968,18 +802,6 @@ public class ManagerDashboardController {
         return form;
     }
 
-    // Method helper untuk refresh table dan create table
-    private void refreshKPIHistoryTable() {
-        if (kpiHistoryTable != null && dataStore != null) {
-            try {
-                List<KPI> allKPI = dataStore.getAllKPI();
-                kpiHistoryTable.setItems(FXCollections.observableArrayList(allKPI));
-            } catch (Exception e) {
-                logger.severe("Error refreshing KPI history: " + e.getMessage());
-            }
-        }
-    }
-
     private TableView<KPI> createKPIHistoryTable() {
         TableView<KPI> table = new TableView<>();
         table.setPrefHeight(400);
@@ -1010,6 +832,17 @@ public class ManagerDashboardController {
         return table;
     }
 
+    private void refreshKPIHistoryTable() {
+        if (kpiHistoryTable != null && dataStore != null) {
+            try {
+                List<KPI> allKPI = dataStore.getAllKPI();
+                kpiHistoryTable.setItems(FXCollections.observableArrayList(allKPI));
+            } catch (Exception e) {
+                logger.severe("Error refreshing KPI history: " + e.getMessage());
+            }
+        }
+    }
+
     private void refreshKPIHistoryTable(TableView<KPI> table) {
         if (dataStore != null) {
             try {
@@ -1021,7 +854,42 @@ public class ManagerDashboardController {
         }
     }
 
-    // Methods untuk table-table lainnya - saya akan implementasikan yang esensial
+    private void showReportReviewsContent() {
+        if (manager == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Report Reviews");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        if (pendingReportsTable == null) {
+            pendingReportsTable = createPendingReportsTable();
+        }
+        Tab pendingTab = new Tab("Pending Reports", pendingReportsTable);
+
+        if (reportHistoryTable == null) {
+            reportHistoryTable = createReportHistoryTable();
+        }
+        Tab historyTab = new Tab("Report History", reportHistoryTable);
+
+        pendingTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(pendingTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
+        setScrollableContent(content);
+    }
+
     private TableView<Report> createPendingReportsTable() {
         TableView<Report> table = new TableView<>();
         table.setPrefHeight(400);
@@ -1081,6 +949,55 @@ public class ManagerDashboardController {
         }
     }
 
+    private TableView<Report> createReportHistoryTable() {
+        TableView<Report> table = new TableView<>();
+        table.setPrefHeight(400);
+        table.getStyleClass().add("data-table");
+
+        TableColumn<Report, String> divisionCol = new TableColumn<>("Division");
+        divisionCol.setCellValueFactory(new PropertyValueFactory<>("divisi"));
+
+        TableColumn<Report, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+
+        TableColumn<Report, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+
+        TableColumn<Report, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<Report, String> reviewedByCol = new TableColumn<>("Reviewed By");
+        reviewedByCol.setCellValueFactory(new PropertyValueFactory<>("reviewedBy"));
+
+        TableColumn<Report, String> reviewDateCol = new TableColumn<>("Review Date");
+        reviewDateCol.setCellValueFactory(cellData -> {
+            Date reviewDate = cellData.getValue().getReviewedDate();
+            return new javafx.beans.property.SimpleStringProperty(
+                    reviewDate != null ? sdf.format(reviewDate) : "");
+        });
+
+        TableColumn<Report, String> notesCol = new TableColumn<>("Manager Notes");
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("managerNotes"));
+
+        table.getColumns().addAll(divisionCol, monthCol, yearCol, statusCol, reviewedByCol, reviewDateCol, notesCol);
+
+        refreshReportHistoryTable(table);
+
+        return table;
+    }
+
+    private void refreshReportHistoryTable(TableView<Report> table) {
+        if (dataStore != null) {
+            try {
+                List<Report> allReports = dataStore.getAllReports();
+                table.setItems(FXCollections.observableArrayList(allReports));
+            } catch (Exception e) {
+                logger.severe("Error loading report history: " + e.getMessage());
+            }
+        }
+    }
+
     private void showReportReviewDialog(Report report) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Review Report");
@@ -1128,109 +1045,203 @@ public class ManagerDashboardController {
         });
     }
 
-    // Dummy implementations untuk table-table lainnya
-    private TableView<Report> createReportHistoryTable() {
-        TableView<Report> table = new TableView<>();
-        table.setPrefHeight(400);
-        table.getStyleClass().add("data-table");
-        // Implementation serupa dengan createPendingReportsTable tapi tanpa action column
-        return table;
-    }
+    // Continue with the rest of the implementation...
+    private void showEvaluationHistoryContent() {
+        if (manager == null || dataStore == null || contentArea == null) {
+            return;
+        }
 
-    private void refreshReportHistoryTable(TableView<Report> table) {
-        // Implementation refresh untuk report history
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Evaluation History");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab monthlyEvaluationsTab = new Tab("Monthly Evaluations", createMonthlyEvaluationsTable());
+        Tab regularEvaluationsTab = new Tab("Regular Evaluations", createRegularEvaluationsTable());
+
+        monthlyEvaluationsTab.setClosable(false);
+        regularEvaluationsTab.setClosable(false);
+
+        tabPane.getTabs().addAll(monthlyEvaluationsTab, regularEvaluationsTab);
+
+        content.getChildren().addAll(title, tabPane);
+        contentArea.getChildren().add(content);
     }
 
     private TableView<MySQLDataStore.MonthlyEvaluation> createMonthlyEvaluationsTable() {
         TableView<MySQLDataStore.MonthlyEvaluation> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk monthly evaluations table
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> supervisorCol = new TableColumn<>("Supervisor");
+        supervisorCol.setCellValueFactory(cellData -> {
+            Employee sup = dataStore.getEmployeeById(cellData.getValue().getSupervisorId());
+            return new javafx.beans.property.SimpleStringProperty(sup != null ? sup.getNama() : "Unknown");
+        });
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(new PropertyValueFactory<>("month"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> overallCol = new TableColumn<>("Overall Rating");
+        overallCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getOverallRating()) + "%"));
+
+        TableColumn<MySQLDataStore.MonthlyEvaluation, String> dateCol = new TableColumn<>("Evaluation Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEvaluationDate())));
+
+        table.getColumns().addAll(employeeCol, supervisorCol, monthCol, yearCol, overallCol, dateCol);
+
+        try {
+            List<MySQLDataStore.MonthlyEvaluation> evaluations = dataStore.getAllMonthlyEvaluations();
+            table.setItems(FXCollections.observableArrayList(evaluations));
+        } catch (Exception e) {
+            logger.severe("Error loading monthly evaluations: " + e.getMessage());
+        }
+
+        table.setPrefHeight(400);
         return table;
     }
 
     private TableView<EmployeeEvaluation> createRegularEvaluationsTable() {
         TableView<EmployeeEvaluation> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk regular evaluations table
-        return table;
-    }
 
-    private TableView<LeaveRequest> createManagerLeaveApprovalTable() {
-        TableView<LeaveRequest> table = new TableView<>();
-        table.getStyleClass().add("data-table");
-        table.setPrefHeight(400);
-
-        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("👤 Employee");
+        TableColumn<EmployeeEvaluation, String> employeeCol = new TableColumn<>("Employee");
         employeeCol.setCellValueFactory(cellData -> {
             Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
             return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
         });
-        employeeCol.setPrefWidth(150);
 
-        TableColumn<LeaveRequest, String> roleCol = new TableColumn<>("👔 Role");
+        TableColumn<EmployeeEvaluation, String> supervisorCol = new TableColumn<>("Supervisor");
+        supervisorCol.setCellValueFactory(cellData -> {
+            Employee sup = dataStore.getEmployeeById(cellData.getValue().getSupervisorId());
+            return new javafx.beans.property.SimpleStringProperty(sup != null ? sup.getNama() : "Unknown");
+        });
+
+        TableColumn<EmployeeEvaluation, String> punctualityCol = new TableColumn<>("Punctuality");
+        punctualityCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getPunctualityScore()) + "%"));
+
+        TableColumn<EmployeeEvaluation, String> attendanceCol = new TableColumn<>("Attendance");
+        attendanceCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getAttendanceScore()) + "%"));
+
+        TableColumn<EmployeeEvaluation, String> overallCol = new TableColumn<>("Overall Rating");
+        overallCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getOverallRating()) + "%"));
+
+        TableColumn<EmployeeEvaluation, String> dateCol = new TableColumn<>("Evaluation Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEvaluationDate())));
+
+        table.getColumns().addAll(employeeCol, supervisorCol, punctualityCol, attendanceCol, overallCol, dateCol);
+
+        try {
+            List<EmployeeEvaluation> evaluations = dataStore.getAllEvaluations();
+            table.setItems(FXCollections.observableArrayList(evaluations));
+        } catch (Exception e) {
+            logger.severe("Error loading regular evaluations: " + e.getMessage());
+        }
+
+        table.setPrefHeight(400);
+        return table;
+    }
+
+    private void showLeaveApprovalsContent() {
+        if (manager == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Leave Request Approvals - Manager Level");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab pendingTab = new Tab("Pending Approvals", createManagerLeaveApprovalTable());
+        Tab historyTab = new Tab("Approval History", createManagerLeaveApprovalHistoryTable());
+
+        pendingTab.setClosable(false);
+        historyTab.setClosable(false);
+
+        tabPane.getTabs().addAll(pendingTab, historyTab);
+
+        content.getChildren().addAll(title, tabPane);
+        contentArea.getChildren().add(content);
+    }
+
+// Add these new methods to ManagerDashboardController.java:
+
+    private TableView<LeaveRequest> createManagerLeaveApprovalTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() + " (" + emp.getId() + ")" : "Unknown");
+        });
+        employeeCol.setPrefWidth(180);
+
+        TableColumn<LeaveRequest, String> roleCol = new TableColumn<>("Role");
         roleCol.setCellValueFactory(cellData -> {
             Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
             String role = emp != null ? emp.getRole() : "Unknown";
-            String icon = role.equals("supervisor") ? "👨‍💼" : "👤";
-            return new javafx.beans.property.SimpleStringProperty(icon + " " + role.substring(0, 1).toUpperCase() + role.substring(1));
+            return new javafx.beans.property.SimpleStringProperty(
+                    role.substring(0, 1).toUpperCase() + role.substring(1));
         });
-        roleCol.setPrefWidth(120);
 
-        TableColumn<LeaveRequest, String> divisionCol = new TableColumn<>("🏢 Division");
+        TableColumn<LeaveRequest, String> divisionCol = new TableColumn<>("Division");
         divisionCol.setCellValueFactory(cellData -> {
             Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
             return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getDivisi() : "Unknown");
         });
-        divisionCol.setPrefWidth(100);
 
-        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Leave Type");
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Leave Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
-        typeCol.setPrefWidth(120);
 
-        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start Date");
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
         startDateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
-        startDateCol.setPrefWidth(100);
 
-        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("📅 End Date");
+        TableColumn<LeaveRequest, String> endDateCol = new TableColumn<>("End Date");
         endDateCol.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getEndDate())));
-        endDateCol.setPrefWidth(100);
 
-        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
         daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
-        daysCol.setPrefWidth(70);
 
-        TableColumn<LeaveRequest, String> reasonCol = new TableColumn<>("📋 Reason");
-        reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
-        reasonCol.setPrefWidth(200);
-
-        TableColumn<LeaveRequest, String> requestDateCol = new TableColumn<>("📅 Requested");
-        requestDateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getRequestDate())));
-        requestDateCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("⚡ Actions");
+        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("Actions");
         actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
-            private final HBox actionBox = new HBox(5);
             private final Button approveBtn = new Button("✅ Approve");
             private final Button rejectBtn = new Button("❌ Reject");
-            private final Button viewBtn = new Button("👁️ View");
+            private final HBox actionBox = new HBox(5, approveBtn, rejectBtn);
 
             {
                 approveBtn.getStyleClass().add("action-button-small-green");
                 rejectBtn.getStyleClass().add("action-button-small-red");
-                viewBtn.getStyleClass().add("review-button");
-
-                actionBox.getChildren().addAll(viewBtn, approveBtn, rejectBtn);
-                actionBox.setAlignment(Pos.CENTER);
-
-                viewBtn.setOnAction(e -> {
-                    LeaveRequest request = getTableView().getItems().get(getIndex());
-                    showManagerLeaveRequestDetailsDialog(request);
-                });
 
                 approveBtn.setOnAction(e -> {
                     LeaveRequest request = getTableView().getItems().get(getIndex());
@@ -1249,397 +1260,459 @@ public class ManagerDashboardController {
                 setGraphic(empty ? null : actionBox);
             }
         });
-        actionCol.setPrefWidth(180);
 
-        table.getColumns().addAll(employeeCol, roleCol, divisionCol, typeCol, startDateCol, endDateCol,
-                daysCol, reasonCol, requestDateCol, actionCol);
+        table.getColumns().addAll(employeeCol, roleCol, divisionCol, typeCol, startDateCol, endDateCol, daysCol, actionCol);
 
-        refreshManagerLeaveApprovalsTable(table);
+        if (dataStore != null && manager != null) {
+            List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(manager.getId());
+            table.setItems(FXCollections.observableArrayList(pendingRequests));
+        }
+        table.setPrefHeight(400);
 
         return table;
     }
 
-    private void refreshManagerLeaveApprovalsTable(TableView<LeaveRequest> table) {
+    private TableView<LeaveRequest> createManagerLeaveApprovalHistoryTable() {
+        TableView<LeaveRequest> table = new TableView<>();
+        table.getStyleClass().add("data-table");
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Leave Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<LeaveRequest, String> approvalDateCol = new TableColumn<>("Approval Date");
+        approvalDateCol.setCellValueFactory(cellData -> {
+            Date approvalDate = cellData.getValue().getApprovalDate();
+            return new javafx.beans.property.SimpleStringProperty(
+                    approvalDate != null ? sdf.format(approvalDate) : "");
+        });
+
+        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("Manager Notes");
+        notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
+
+        table.getColumns().addAll(employeeCol, typeCol, startDateCol, daysCol, statusCol, approvalDateCol, notesCol);
+
         if (dataStore != null && manager != null) {
-            try {
-                System.out.println("=== MANAGER LEAVE APPROVALS DEBUG ===");
-                System.out.println("Manager: " + manager.getNama() + " (ID: " + manager.getId() + ")");
-                System.out.println("Role: " + manager.getRole());
-
-                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(manager.getId());
-                System.out.println("Found " + pendingRequests.size() + " pending requests for manager approval");
-
-                for (LeaveRequest req : pendingRequests) {
-                    Employee emp = dataStore.getEmployeeById(req.getEmployeeId());
-                    System.out.println("- Request from: " + (emp != null ? emp.getNama() + " (" + emp.getRole() + ", " + emp.getDivisi() + ")" : req.getEmployeeId()));
-                }
-
-                table.setItems(FXCollections.observableArrayList(pendingRequests));
-            } catch (Exception e) {
-                logger.severe("Error loading leave requests for manager approval: " + e.getMessage());
-                e.printStackTrace();
-            }
+            List<LeaveRequest> processedRequests = dataStore.getAllLeaveRequests().stream()
+                    .filter(lr -> manager.getId().equals(lr.getApproverId()))
+                    .filter(lr -> !"pending".equals(lr.getStatus()))
+                    .sorted((l1, l2) -> {
+                        Date d1 = l1.getApprovalDate();
+                        Date d2 = l2.getApprovalDate();
+                        if (d1 == null && d2 == null) return 0;
+                        if (d1 == null) return 1;
+                        if (d2 == null) return -1;
+                        return d2.compareTo(d1);
+                    })
+                    .collect(Collectors.toList());
+            table.setItems(FXCollections.observableArrayList(processedRequests));
         }
+        table.setPrefHeight(400);
+
+        return table;
     }
 
-    private void showManagerLeaveRequestDetailsDialog(LeaveRequest request) {
-        Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
-        String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
-
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("👁️ Leave Request Details");
-        dialog.setHeaderText("Leave request details for " + employeeName);
-
-        VBox content = new VBox(15);
-        content.setPadding(new Insets(25));
-
-        // Employee Information Section
-        Label empInfoTitle = new Label("👤 Employee Information");
-        empInfoTitle.getStyleClass().add("section-title");
-
-        GridPane empInfoGrid = new GridPane();
-        empInfoGrid.setHgap(15);
-        empInfoGrid.setVgap(10);
-        empInfoGrid.setPadding(new Insets(10));
-
-        empInfoGrid.add(new Label("Name:"), 0, 0);
-        empInfoGrid.add(new Label(employeeName), 1, 0);
-
-        if (requestingEmployee != null) {
-            empInfoGrid.add(new Label("Role:"), 0, 1);
-            empInfoGrid.add(new Label(requestingEmployee.getRole().substring(0, 1).toUpperCase() + requestingEmployee.getRole().substring(1)), 1, 1);
-
-            empInfoGrid.add(new Label("Division:"), 0, 2);
-            empInfoGrid.add(new Label(requestingEmployee.getDivisi()), 1, 2);
-
-            empInfoGrid.add(new Label("Position:"), 0, 3);
-            empInfoGrid.add(new Label(requestingEmployee.getJabatan()), 1, 3);
-
-            empInfoGrid.add(new Label("Remaining Leave Days:"), 0, 4);
-            empInfoGrid.add(new Label(String.valueOf(requestingEmployee.getSisaCuti())), 1, 4);
-        }
-
-        // Leave Request Details Section
-        Label reqDetailsTitle = new Label("📋 Leave Request Details");
-        reqDetailsTitle.getStyleClass().add("section-title");
-
-        GridPane reqDetailsGrid = new GridPane();
-        reqDetailsGrid.setHgap(15);
-        reqDetailsGrid.setVgap(10);
-        reqDetailsGrid.setPadding(new Insets(10));
-
-        reqDetailsGrid.add(new Label("Leave Type:"), 0, 0);
-        reqDetailsGrid.add(new Label(request.getLeaveType()), 1, 0);
-
-        reqDetailsGrid.add(new Label("Start Date:"), 0, 1);
-        reqDetailsGrid.add(new Label(sdf.format(request.getStartDate())), 1, 1);
-
-        reqDetailsGrid.add(new Label("End Date:"), 0, 2);
-        reqDetailsGrid.add(new Label(sdf.format(request.getEndDate())), 1, 2);
-
-        reqDetailsGrid.add(new Label("Total Days:"), 0, 3);
-        reqDetailsGrid.add(new Label(String.valueOf(request.getTotalDays())), 1, 3);
-
-        reqDetailsGrid.add(new Label("Request Date:"), 0, 4);
-        reqDetailsGrid.add(new Label(sdf.format(request.getRequestDate())), 1, 4);
-
-        reqDetailsGrid.add(new Label("Reason:"), 0, 5);
-        Label reasonLabel = new Label(request.getReason());
-        reasonLabel.setWrapText(true);
-        reasonLabel.setMaxWidth(300);
-        reqDetailsGrid.add(reasonLabel, 1, 5);
-
-        content.getChildren().addAll(
-                empInfoTitle, empInfoGrid,
-                new Separator(),
-                reqDetailsTitle, reqDetailsGrid
-        );
-
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-
-        dialog.showAndWait();
-    }
-
-    // NEW METHOD: Show Manager Leave Approval Dialog
     private void showManagerLeaveApprovalDialog(LeaveRequest request, boolean isApproval) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(isApproval ? "Approve Leave Request" : "Reject Leave Request");
+
         Employee requestingEmployee = dataStore.getEmployeeById(request.getEmployeeId());
         String employeeName = requestingEmployee != null ? requestingEmployee.getNama() : "Unknown";
         String employeeRole = requestingEmployee != null ? requestingEmployee.getRole() : "Unknown";
 
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(isApproval ? "✅ Approve Leave Request" : "❌ Reject Leave Request");
         dialog.setHeaderText((isApproval ? "Approve" : "Reject") + " leave request from " + employeeName + " (" + employeeRole + ")");
 
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
 
-        // Quick Summary
-        GridPane summaryGrid = new GridPane();
-        summaryGrid.setHgap(15);
-        summaryGrid.setVgap(10);
-        summaryGrid.getStyleClass().add("form-container");
-        summaryGrid.setPadding(new Insets(15));
+        // Request summary
+        VBox summaryBox = new VBox(5);
+        summaryBox.setStyle("-fx-background-color: #f8f9fa; -fx-padding: 15; -fx-background-radius: 5;");
+        summaryBox.getChildren().addAll(
+                new Label("Employee: " + employeeName + " (" + request.getEmployeeId() + ")"),
+                new Label("Role: " + employeeRole + " | Division: " + (requestingEmployee != null ? requestingEmployee.getDivisi() : "Unknown")),
+                new Label("Leave Type: " + request.getLeaveType()),
+                new Label("Period: " + sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate())),
+                new Label("Total Days: " + request.getTotalDays()),
+                new Label("Reason: " + request.getReason())
+        );
 
-        summaryGrid.add(new Label("👤 Employee:"), 0, 0);
-        summaryGrid.add(new Label(employeeName), 1, 0);
-
-        summaryGrid.add(new Label("👔 Role:"), 0, 1);
-        summaryGrid.add(new Label(employeeRole.substring(0, 1).toUpperCase() + employeeRole.substring(1)), 1, 1);
-
-        summaryGrid.add(new Label("🏢 Division:"), 0, 2);
-        summaryGrid.add(new Label(requestingEmployee != null ? requestingEmployee.getDivisi() : "Unknown"), 1, 2);
-
-        summaryGrid.add(new Label("📝 Leave Type:"), 0, 3);
-        summaryGrid.add(new Label(request.getLeaveType()), 1, 3);
-
-        summaryGrid.add(new Label("📅 Period:"), 0, 4);
-        summaryGrid.add(new Label(sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate())), 1, 4);
-
-        summaryGrid.add(new Label("📊 Total Days:"), 0, 5);
-        summaryGrid.add(new Label(String.valueOf(request.getTotalDays())), 1, 5);
-
-        summaryGrid.add(new Label("📋 Reason:"), 0, 6);
-        Label reasonLabel = new Label(request.getReason());
-        reasonLabel.setWrapText(true);
-        reasonLabel.setMaxWidth(300);
-        summaryGrid.add(reasonLabel, 1, 6);
-
-        // Manager Notes Section
-        Label notesLabel = new Label("💬 Manager " + (isApproval ? "Approval" : "Rejection") + " Notes:");
-        notesLabel.getStyleClass().add("form-label");
-
-        TextArea notesArea = new TextArea();
-        notesArea.setPromptText("Enter your decision notes here (required)...");
-        notesArea.setPrefRowCount(4);
-        notesArea.setMaxWidth(400);
-
-        // Impact Analysis (for Manager decision making)
-        Label impactTitle = new Label("📊 Impact Analysis");
-        impactTitle.getStyleClass().add("section-title");
-
-        VBox impactBox = new VBox(8);
-        impactBox.getStyleClass().add("form-container");
-        impactBox.setPadding(new Insets(15));
-
+        // Leave balance warning
+        VBox warningBox = new VBox(5);
         if (requestingEmployee != null) {
-            impactBox.getChildren().addAll(
-                    new Label("• Current leave balance: " + requestingEmployee.getSisaCuti() + " days"),
-                    new Label("• After approval: " + (requestingEmployee.getSisaCuti() - request.getTotalDays()) + " days remaining"),
-                    new Label("• Employee performance: " + df.format(requestingEmployee.getSupervisorRating()) + "% supervisor rating"),
-                    new Label("• Role impact: " + (employeeRole.equals("supervisor") ? "High - Team leadership role" : "Medium - Individual contributor"))
-            );
+            int remainingLeave = requestingEmployee.getSisaCuti();
+            if (request.getTotalDays() > remainingLeave) {
+                Label warningLabel = new Label("⚠️ WARNING: Employee has insufficient leave days!");
+                Label detailLabel = new Label("Requested: " + request.getTotalDays() + " days | Available: " + remainingLeave + " days");
+                warningLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                detailLabel.setStyle("-fx-text-fill: #e74c3c;");
+                warningBox.getChildren().addAll(warningLabel, detailLabel);
+            } else {
+                Label okLabel = new Label("✅ Employee has sufficient leave balance (" + remainingLeave + " days available)");
+                okLabel.setStyle("-fx-text-fill: #27ae60;");
+                warningBox.getChildren().add(okLabel);
+            }
         }
 
-        content.getChildren().addAll(
-                new Label("📋 Request Summary:"),
-                summaryGrid,
-                new Separator(),
-                impactTitle,
-                impactBox,
-                new Separator(),
-                notesLabel,
-                notesArea
-        );
+        // Manager notes
+        Label notesLabel = new Label("Manager Notes:");
+        notesLabel.setStyle("-fx-font-weight: bold;");
+        TextArea notesArea = new TextArea();
+        notesArea.setPromptText("Enter your " + (isApproval ? "approval" : "rejection") + " notes...");
+        notesArea.setPrefRowCount(4);
+
+        content.getChildren().addAll(summaryBox, warningBox, new Separator(), notesLabel, notesArea);
 
         dialog.getDialogPane().setContent(content);
 
-        ButtonType confirmButton = new ButtonType(isApproval ? "✅ Approve Request" : "❌ Reject Request", ButtonBar.ButtonData.OK_DONE);
+        ButtonType actionButton = new ButtonType(isApproval ? "Approve" : "Reject", ButtonBar.ButtonData.OK_DONE);
         ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-        dialog.getDialogPane().getButtonTypes().addAll(confirmButton, cancelButton);
+        dialog.getDialogPane().getButtonTypes().addAll(actionButton, cancelButton);
 
         dialog.showAndWait().ifPresent(result -> {
-            if (result == confirmButton) {
-                if (notesArea.getText().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.WARNING, "Missing Notes",
-                            "Please provide notes for your decision. This is required for audit purposes.");
-                    return;
+            if (result == actionButton) {
+                String notes = notesArea.getText().trim();
+                if (notes.isEmpty()) {
+                    notes = isApproval ? "Approved by manager" : "Rejected by manager";
                 }
 
-                try {
-                    boolean success;
-                    if (isApproval) {
-                        success = dataStore.approveLeaveRequest(request.getId(), manager.getId(), notesArea.getText());
-                    } else {
-                        success = dataStore.rejectLeaveRequest(request.getId(), manager.getId(), notesArea.getText());
+                // Additional confirmation for insufficient balance
+                if (isApproval && requestingEmployee != null && request.getTotalDays() > requestingEmployee.getSisaCuti()) {
+                    Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                    confirmAlert.setTitle("Confirm Approval");
+                    confirmAlert.setHeaderText("Employee has insufficient leave balance");
+                    confirmAlert.setContentText("This approval will result in negative leave balance. Continue?");
+                    if (confirmAlert.showAndWait().get() != ButtonType.OK) {
+                        return;
                     }
+                }
 
-                    if (success) {
-                        String action = isApproval ? "approved" : "rejected";
-                        showAlert(Alert.AlertType.INFORMATION, "Success",
-                                "Leave request " + action + " successfully!\n\n" +
-                                        "Employee: " + employeeName + "\n" +
-                                        "Period: " + sdf.format(request.getStartDate()) + " to " + sdf.format(request.getEndDate()));
+                boolean success;
+                if (isApproval) {
+                    success = dataStore.approveLeaveRequest(request.getId(), manager.getId(), notes);
+                } else {
+                    success = dataStore.rejectLeaveRequest(request.getId(), manager.getId(), notes);
+                }
 
-                        // Refresh tables and dashboard
-                        refreshManagerLeaveApprovalsTables();
-                        showDashboardContent(); // Refresh stats
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request.");
-                    }
-                } catch (Exception e) {
-                    logger.severe("Error processing leave request: " + e.getMessage());
-                    showAlert(Alert.AlertType.ERROR, "Error", "Failed to process leave request: " + e.getMessage());
+                if (success) {
+                    showAlert(Alert.AlertType.INFORMATION, "Success",
+                            "Leave request " + (isApproval ? "approved" : "rejected") + " successfully!");
+                    showLeaveApprovalsContent(); // Refresh the view
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Error",
+                            "Failed to " + (isApproval ? "approve" : "reject") + " leave request.");
                 }
             }
         });
     }
 
-    // NEW METHOD: Create Manager Leave Approval History Table
-    private TableView<LeaveRequest> createManagerLeaveApprovalHistoryTable() {
-        TableView<LeaveRequest> table = new TableView<>();
-        table.getStyleClass().add("data-table");
-        table.setPrefHeight(400);
 
-        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("👤 Employee");
-        employeeCol.setCellValueFactory(cellData -> {
-            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
-            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
-        });
-        employeeCol.setPrefWidth(120);
-
-        TableColumn<LeaveRequest, String> roleCol = new TableColumn<>("👔 Role");
-        roleCol.setCellValueFactory(cellData -> {
-            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
-            String role = emp != null ? emp.getRole() : "Unknown";
-            return new javafx.beans.property.SimpleStringProperty(role.substring(0, 1).toUpperCase() + role.substring(1));
-        });
-        roleCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("📝 Type");
-        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
-        typeCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("📅 Start");
-        startDateCol.setCellValueFactory(cellData ->
-                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
-        startDateCol.setPrefWidth(90);
-
-        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("📊 Days");
-        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
-        daysCol.setPrefWidth(60);
-
-        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("✅ Status");
-        statusCol.setCellValueFactory(cellData -> {
-            String status = cellData.getValue().getStatus();
-            String icon = status.equals("approved") ? "✅" : "❌";
-            return new javafx.beans.property.SimpleStringProperty(icon + " " + status.substring(0, 1).toUpperCase() + status.substring(1));
-        });
-        statusCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, String> approvalDateCol = new TableColumn<>("📅 Decision Date");
-        approvalDateCol.setCellValueFactory(cellData -> {
-            Date approvalDate = cellData.getValue().getApprovalDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    approvalDate != null ? sdf.format(approvalDate) : "N/A");
-        });
-        approvalDateCol.setPrefWidth(100);
-
-        TableColumn<LeaveRequest, String> notesCol = new TableColumn<>("📋 Manager Notes");
-        notesCol.setCellValueFactory(new PropertyValueFactory<>("approverNotes"));
-        notesCol.setPrefWidth(200);
-
-        TableColumn<LeaveRequest, Void> actionCol = new TableColumn<>("⚡ Action");
-        actionCol.setCellFactory(col -> new TableCell<LeaveRequest, Void>() {
-            private final Button viewBtn = new Button("👁️ View");
-
-            {
-                viewBtn.getStyleClass().add("review-button");
-                viewBtn.setOnAction(e -> {
-                    LeaveRequest request = getTableView().getItems().get(getIndex());
-                    showManagerLeaveRequestDetailsDialog(request);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : viewBtn);
-            }
-        });
-        actionCol.setPrefWidth(80);
-
-        table.getColumns().addAll(employeeCol, roleCol, typeCol, startDateCol, daysCol,
-                statusCol, approvalDateCol, notesCol, actionCol);
-
-        refreshManagerLeaveApprovalHistoryTable(table);
-
-        return table;
-    }
-
-    // NEW METHOD: Refresh Manager Leave Approval History Table
-    private void refreshManagerLeaveApprovalHistoryTable(TableView<LeaveRequest> table) {
+    private void refreshLeaveApprovalsTable(TableView<LeaveRequest> table) {
         if (dataStore != null && manager != null) {
             try {
-                List<LeaveRequest> allRequests = dataStore.getAllLeaveRequests();
-
-                // Filter requests that were approved/rejected by this manager
-                List<LeaveRequest> managerApprovals = allRequests.stream()
-                        .filter(req -> manager.getId().equals(req.getApproverId()))
-                        .filter(req -> "approved".equals(req.getStatus()) || "rejected".equals(req.getStatus()))
-                        .sorted((r1, r2) -> {
-                            // Sort by approval date, newest first
-                            if (r1.getApprovalDate() == null && r2.getApprovalDate() == null) return 0;
-                            if (r1.getApprovalDate() == null) return 1;
-                            if (r2.getApprovalDate() == null) return -1;
-                            return r2.getApprovalDate().compareTo(r1.getApprovalDate());
-                        })
-                        .collect(Collectors.toList());
-
-                table.setItems(FXCollections.observableArrayList(managerApprovals));
+                List<LeaveRequest> pendingRequests = dataStore.getLeaveRequestsForApproval(manager.getId());
+                table.setItems(FXCollections.observableArrayList(pendingRequests));
             } catch (Exception e) {
-                logger.severe("Error loading manager approval history: " + e.getMessage());
+                logger.severe("Error loading leave requests for approval: " + e.getMessage());
             }
         }
     }
 
-    // NEW METHOD: Refresh all Manager Leave Approval Tables
-    private void refreshManagerLeaveApprovalsTables() {
-        // This method would refresh any existing leave approval tables
-        // You would call this after approving/rejecting requests
-        Platform.runLater(() -> {
-            showLeaveApprovalsContent(); // This will recreate the tabs with fresh data
-        });
+    private void showSalaryManagementContent() {
+        if (manager == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("Salary Management");
+        title.getStyleClass().add("content-title");
+
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("custom-tab-pane");
+
+        Tab salaryOverviewTab = new Tab("Salary Overview", createSalaryOverviewTable());
+        Tab salaryHistoryTab = new Tab("Salary History", createAllSalaryHistoryTable());
+
+        salaryOverviewTab.setClosable(false);
+        salaryHistoryTab.setClosable(false);
+
+        tabPane.getTabs().addAll(salaryOverviewTab, salaryHistoryTab);
+
+        content.getChildren().addAll(title, tabPane);
+        contentArea.getChildren().add(content);
     }
 
     private TableView<Employee> createSalaryOverviewTable() {
         TableView<Employee> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk salary overview table
+
+        TableColumn<Employee, String> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Employee, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("nama"));
+
+        TableColumn<Employee, String> divisionCol = new TableColumn<>("Division");
+        divisionCol.setCellValueFactory(new PropertyValueFactory<>("divisi"));
+
+        TableColumn<Employee, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getGajiPokok())));
+
+        TableColumn<Employee, String> kpiScoreCol = new TableColumn<>("KPI Score");
+        kpiScoreCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getKpiScore()) + "%"));
+
+        TableColumn<Employee, String> supervisorRatingCol = new TableColumn<>("Supervisor Rating");
+        supervisorRatingCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(df.format(cellData.getValue().getSupervisorRating()) + "%"));
+
+        TableColumn<Employee, String> currentSalaryCol = new TableColumn<>("Current Salary");
+        currentSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().calculateGajiBulanan())));
+
+        table.getColumns().addAll(idCol, nameCol, divisionCol, baseSalaryCol, kpiScoreCol, supervisorRatingCol, currentSalaryCol);
+
+        try {
+            List<Employee> allEmployees = dataStore.getAllEmployees();
+            table.setItems(FXCollections.observableArrayList(allEmployees));
+        } catch (Exception e) {
+            logger.severe("Error loading salary overview: " + e.getMessage());
+        }
+
+        table.setPrefHeight(400);
         return table;
     }
 
     private TableView<SalaryHistory> createAllSalaryHistoryTable() {
         TableView<SalaryHistory> table = new TableView<>();
-        table.setPrefHeight(400);
         table.getStyleClass().add("data-table");
-        // Implementation untuk all salary history table
+
+        TableColumn<SalaryHistory, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<SalaryHistory, String> monthCol = new TableColumn<>("Month");
+        monthCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMonthName()));
+
+        TableColumn<SalaryHistory, Integer> yearCol = new TableColumn<>("Year");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("tahun"));
+
+        TableColumn<SalaryHistory, String> baseSalaryCol = new TableColumn<>("Base Salary");
+        baseSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getBaseSalary())));
+
+        TableColumn<SalaryHistory, String> kpiBonusCol = new TableColumn<>("KPI Bonus");
+        kpiBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getKpiBonus())));
+
+        TableColumn<SalaryHistory, String> supervisorBonusCol = new TableColumn<>("Supervisor Bonus");
+        supervisorBonusCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getSupervisorBonus())));
+
+        TableColumn<SalaryHistory, String> totalSalaryCol = new TableColumn<>("Total Salary");
+        totalSalaryCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(String.format("Rp %,.0f", cellData.getValue().getTotalSalary())));
+
+        table.getColumns().addAll(employeeCol, monthCol, yearCol, baseSalaryCol, kpiBonusCol, supervisorBonusCol, totalSalaryCol);
+
+        try {
+            List<SalaryHistory> allSalaryHistory = dataStore.getAllSalaryHistory();
+            table.setItems(FXCollections.observableArrayList(allSalaryHistory));
+        } catch (Exception e) {
+            logger.severe("Error loading salary history: " + e.getMessage());
+        }
+
+        table.setPrefHeight(400);
         return table;
+    }
+
+    private void showAllHistoryContent() {
+        if (manager == null || dataStore == null || contentArea == null) {
+            return;
+        }
+
+        contentArea.getChildren().clear();
+
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.TOP_CENTER);
+        content.getStyleClass().add("dashboard-content-container");
+
+        Label title = new Label("All History & Records");
+        title.getStyleClass().add("content-title");
+
+        TabPane historyTabs = new TabPane();
+        historyTabs.getStyleClass().add("custom-tab-pane");
+
+        Tab kpiHistoryTab = new Tab("KPI History", createKPIHistoryTable());
+        Tab reportsHistoryTab = new Tab("Reports", createReportHistoryTable());
+        Tab evaluationsHistoryTab = new Tab("Evaluations", createMonthlyEvaluationsTable());
+        Tab leaveHistoryTab = new Tab("Leave Requests", createAllLeaveRequestsTable());
+        Tab meetingsHistoryTab = new Tab("Meetings", createAllMeetingsTable());
+        Tab attendanceHistoryTab = new Tab("Attendance", createAllAttendanceTable());
+
+        kpiHistoryTab.setClosable(false);
+        reportsHistoryTab.setClosable(false);
+        evaluationsHistoryTab.setClosable(false);
+        leaveHistoryTab.setClosable(false);
+        meetingsHistoryTab.setClosable(false);
+        attendanceHistoryTab.setClosable(false);
+
+        historyTabs.getTabs().addAll(kpiHistoryTab, reportsHistoryTab, evaluationsHistoryTab,
+                leaveHistoryTab, meetingsHistoryTab, attendanceHistoryTab);
+
+        content.getChildren().addAll(title, historyTabs);
+        setScrollableContent(content);
     }
 
     private TableView<LeaveRequest> createAllLeaveRequestsTable() {
         TableView<LeaveRequest> table = new TableView<>();
-        table.setPrefHeight(350);
         table.getStyleClass().add("data-table");
-        // Implementation untuk all leave requests table
+
+        TableColumn<LeaveRequest, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<LeaveRequest, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("leaveType"));
+
+        TableColumn<LeaveRequest, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getStartDate())));
+
+        TableColumn<LeaveRequest, Integer> daysCol = new TableColumn<>("Days");
+        daysCol.setCellValueFactory(new PropertyValueFactory<>("totalDays"));
+
+        TableColumn<LeaveRequest, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        TableColumn<LeaveRequest, String> approverCol = new TableColumn<>("Approver");
+        approverCol.setCellValueFactory(cellData -> {
+            String approverId = cellData.getValue().getApproverId();
+            if (approverId != null) {
+                Employee approver = dataStore.getEmployeeById(approverId);
+                return new javafx.beans.property.SimpleStringProperty(approver != null ? approver.getNama() : approverId);
+            }
+            return new javafx.beans.property.SimpleStringProperty("");
+        });
+
+        table.getColumns().addAll(employeeCol, typeCol, startDateCol, daysCol, statusCol, approverCol);
+
+        try {
+            List<LeaveRequest> allLeaveRequests = dataStore.getAllLeaveRequests();
+            table.setItems(FXCollections.observableArrayList(allLeaveRequests));
+        } catch (Exception e) {
+            logger.severe("Error loading leave requests history: " + e.getMessage());
+        }
+
+        table.setPrefHeight(350);
         return table;
     }
 
     private TableView<Meeting> createAllMeetingsTable() {
         TableView<Meeting> table = new TableView<>();
-        table.setPrefHeight(350);
         table.getStyleClass().add("data-table");
-        // Implementation untuk all meetings table
+
+        TableColumn<Meeting, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+
+        TableColumn<Meeting, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Meeting, String> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getWaktuMulai() + " - " + cellData.getValue().getWaktuSelesai()));
+
+        TableColumn<Meeting, String> organizerCol = new TableColumn<>("Organizer");
+        organizerCol.setCellValueFactory(cellData -> {
+            Employee organizer = dataStore.getEmployeeById(cellData.getValue().getOrganizerId());
+            return new javafx.beans.property.SimpleStringProperty(organizer != null ? organizer.getNama() : "Unknown");
+        });
+
+        TableColumn<Meeting, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(titleCol, dateCol, timeCol, organizerCol, statusCol);
+
+        try {
+            // For simplicity, we'll get all meetings by getting meetings for all employees
+            List<Meeting> allMeetings = dataStore.getAllEmployees().stream()
+                    .flatMap(emp -> dataStore.getMeetingsByEmployee(emp.getId()).stream())
+                    .distinct()
+                    .collect(Collectors.toList());
+            table.setItems(FXCollections.observableArrayList(allMeetings));
+        } catch (Exception e) {
+            logger.severe("Error loading meetings history: " + e.getMessage());
+        }
+
+        table.setPrefHeight(350);
         return table;
     }
 
     private TableView<Attendance> createAllAttendanceTable() {
         TableView<Attendance> table = new TableView<>();
-        table.setPrefHeight(350);
         table.getStyleClass().add("data-table");
-        // Implementation untuk all attendance table
+
+        TableColumn<Attendance, String> employeeCol = new TableColumn<>("Employee");
+        employeeCol.setCellValueFactory(cellData -> {
+            Employee emp = dataStore.getEmployeeById(cellData.getValue().getEmployeeId());
+            return new javafx.beans.property.SimpleStringProperty(emp != null ? emp.getNama() : "Unknown");
+        });
+
+        TableColumn<Attendance, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(sdf.format(cellData.getValue().getTanggal())));
+
+        TableColumn<Attendance, String> clockInCol = new TableColumn<>("Clock In");
+        clockInCol.setCellValueFactory(new PropertyValueFactory<>("jamMasuk"));
+
+        TableColumn<Attendance, String> clockOutCol = new TableColumn<>("Clock Out");
+        clockOutCol.setCellValueFactory(new PropertyValueFactory<>("jamKeluar"));
+
+        TableColumn<Attendance, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        table.getColumns().addAll(employeeCol, dateCol, clockInCol, clockOutCol, statusCol);
+
+        try {
+            // For simplicity, we'll get attendance for all employees in the last 30 days
+            List<Attendance> allAttendance = dataStore.getAllEmployees().stream()
+                    .flatMap(emp -> dataStore.getAttendanceByEmployee(emp.getId()).stream())
+                    .collect(Collectors.toList());
+            table.setItems(FXCollections.observableArrayList(allAttendance));
+        } catch (Exception e) {
+            logger.severe("Error loading attendance history: " + e.getMessage());
+        }
+
+        table.setPrefHeight(350);
         return table;
     }
 

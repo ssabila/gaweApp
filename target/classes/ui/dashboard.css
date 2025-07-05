@@ -198,7 +198,9 @@
 /* Navigation buttons container */
 .nav-buttons-container {
     -fx-background-color: transparent;
-    -fx-padding: 0;
+    -fx-padding: 5;
+    -fx-margin-left: 50;
+    -fx-end-margin: 50;
 }
 
 .nav-button {
@@ -211,13 +213,10 @@
     -fx-alignment: center-left;
     -fx-cursor: hand;
     -fx-background-radius: 8;
-    -fx-border-color: #e0e0e0;
+    -fx-border-color: #216163;
     -fx-border-width: 1;
     -fx-border-radius: 8;
-    -fx-wrap-text: true;
-    -fx-text-alignment: left;
-    -fx-min-height: 45;
-    -fx-pref-width: 280;
+    -fx-margin: 5;
 }
 
 .nav-button:hover {
