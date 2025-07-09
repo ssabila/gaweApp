@@ -735,8 +735,8 @@
     -fx-border-color: rgba(181, 243, 238, 0.3);
     -fx-border-width: 1;
     -fx-border-radius: 16;
-    -fx-max-width: 400;
-    -fx-pref-width: 400;
+    -fx-max-width: 450;
+    -fx-max-height: 600;
 }
 
 .login-logo {

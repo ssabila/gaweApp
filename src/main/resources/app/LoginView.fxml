@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.SVGPath?>
 
-<BorderPane style="-fx-background-color: linear-gradient(to bottom right, #216163, #2B7583);" stylesheets="@../ui/dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.LoginController">
+<BorderPane styleClass="login-background" stylesheets="@../ui/dashboard.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.LoginController">
     <center>
         <VBox alignment="CENTER" maxWidth="400.0" spacing="24.0" styleClass="login-container">
             <padding>
