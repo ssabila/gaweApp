@@ -145,7 +145,7 @@ public class HelloApplication extends Application {
 
             // Step 6: Create Scene
             System.out.println("Step 7: Creating Scene...");
-            Scene scene = new Scene(root, 1366, 700);
+            Scene scene = new Scene(root, 1366, 768);
             System.out.println("✅ Step 7: Scene created successfully");
 
             // Step 7: Configure Stage

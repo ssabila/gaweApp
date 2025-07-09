@@ -78,7 +78,7 @@ public class ManagerDashboard extends Application {
             System.out.println("✅ Controller configured successfully");
 
             // Create scene and show
-            Scene scene = new Scene(root, 1366, 700);
+            Scene scene = new Scene(root, 1366, 768);
             stage.setScene(scene);
             stage.setTitle("GAWE - Manager Dashboard - " + manager.getNama());
             stage.show();

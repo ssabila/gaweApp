@@ -19,11 +19,17 @@
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="12.0">
                     <children>
-                        <ImageView styleClass="header-logo" fitHeight="40.0" fitWidth="120.0" preserveRatio="true">
-                            <image>
-                                <Image url="/public/gawe.png" />
-                            </image>
-                        </ImageView>
+                        <StackPane>
+                            <children>
+                                <ImageView styleClass="header-logo" fitHeight="40.0" fitWidth="120.0" preserveRatio="true">
+                                    <image>
+                                        <Image url="/public/gawe.png" />
+                                    </image>
+                                </ImageView>
+                            </children>
+                            <padding>
+                                <Insets left="45.0" /> </padding>
+                        </StackPane>
                     </children>
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />

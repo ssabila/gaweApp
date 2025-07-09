@@ -1,4 +1,3 @@
-/* Modern GAWE Dashboard CSS with Custom Color Palette - Responsive & Scrollable */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=The+Seasons:wght@400;700&display=swap");
 
@@ -22,16 +21,8 @@
     }
 }
 
-/* Latar belakang untuk halaman login dengan gradasi dan pola garis diagonal */
 .login-background {
     -fx-background-color: linear-gradient(to bottom right, #216163, #2b7583);
-    -fx-background-image: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 5px,
-            rgba(255, 255, 255, 0.04) 5px,
-            rgba(255, 255, 255, 0.04) 10px
-    );
 }
 
 /* Header styling - Responsive */
@@ -52,12 +43,8 @@
     -fx-text-fill: #216163;
 }
 
-.gawe-logo {
-    -fx-font-family: "Poppins", sans-serif;
-    -fx-font-size: 28px;
-    -fx-font-weight: 700;
-    -fx-text-fill: #fffffff;
-    -fx-padding: 5 15 5 0;
+.header-logo {
+    -fx-padding: 0 0 0 35px;
 }
 
 .user-welcome-label {
@@ -118,6 +105,10 @@
     -fx-background-radius: 4;
 }
 
+.navigation-sidebar{
+    -fx-background-color: #ffffff;
+}
+
 /* Content scroll pane */
 .content-scroll {
     -fx-background-color: transparent;
@@ -145,16 +136,14 @@
     -fx-background-radius: 5;
 }
 
-/* Navigation sidebar - Wider and Responsive */
 .sidebar {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: #ffffff;
     -fx-border-color: #216163;
     -fx-border-width: 0 1 0 0;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 4, 0, 2, 0);
     -fx-padding: 0;
 }
 
-/* Content area - Responsive */
 .content-area {
     -fx-background-color: #ffffff;
     -fx-padding: 25;
@@ -195,7 +184,6 @@
     -fx-text-alignment: center;
 }
 
-/* Navigation buttons container */
 .nav-buttons-container {
     -fx-background-color: #ffffff;
     -fx-padding: 5;
@@ -235,7 +223,6 @@
     -fx-border-width: 2;
 }
 
-/* Dashboard content container - Responsive */
 .dashboard-content-container {
     -fx-background-color: transparent;
     -fx-padding: 25;
@@ -268,7 +255,6 @@
     -fx-wrap-text: true;
 }
 
-/* Quick actions - Responsive */
 .quick-actions-box {
     -fx-background-color: #ffffff;
     -fx-padding: 25;
@@ -280,7 +266,6 @@
     -fx-spacing: 15;
 }
 
-/* Action buttons - Responsive */
 .action-button-green {
     -fx-background-color: #ffffff;
     -fx-text-fill: #216163;
@@ -474,7 +459,6 @@
     -fx-text-alignment: center;
 }
 
-/* Recent activities section - Responsive */
 .recent-activities-section {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
@@ -513,7 +497,6 @@
     -fx-background-radius: 6;
 }
 
-/* Data tables - Responsive */
 .table-view {
     -fx-background-color: #ffffff;
     -fx-border-color: #216163;
@@ -546,6 +529,7 @@
     -fx-border-color: #e0e0e0;
     -fx-border-width: 0 0 1 0;
     -fx-wrap-text: true;
+    -fx-text-alignment: CENTER;
 }
 
 .table-row-cell:hover {
@@ -579,7 +563,6 @@
 /* --- AKHIR PERUBAHAN --- */
 
 
-/* Forms - Responsive */
 .form-container {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
@@ -640,7 +623,6 @@
     -fx-effect: dropshadow(gaussian, rgba(33, 97, 99, 0.3), 4, 0, 0, 0);
 }
 
-/* Buttons - Responsive */
 .primary-button {
     -fx-background-color: #216163;
     -fx-text-fill: #ffffff;
@@ -659,7 +641,6 @@
     -fx-effect: dropshadow(gaussian, rgba(43, 117, 131, 0.4), 8, 0, 0, 3);
 }
 
-/* Tab Pane - Responsive */
 .custom-tab-pane {
     -fx-background-color: #ffffff;
     -fx-border-color: #216163;
@@ -695,7 +676,6 @@
     -fx-background-color: #f8f9fa;
 }
 
-/* Salary breakdown - Responsive */
 .salary-breakdown-box {
     -fx-background-color: #ffffff;
     -fx-background-radius: 12;
@@ -832,7 +812,6 @@
     -fx-font-size: 13px;
 }
 
-/* Responsive adjustments */
 @media screen and (max-width: 1366px) {
     .content-title {
         -fx-font-size: 28px;
@@ -854,6 +833,10 @@
     .nav-button {
         -fx-font-size: 13px;
         -fx-padding: 12 18 12 18;
+    }
+
+    .scroll-pane{
+        -fx-fit-to-width: true;
     }
 }
 
@@ -939,7 +922,6 @@
     }
 }
 
-/* Scrollbar styling for all scroll panes */
 .scroll-pane .scroll-bar:vertical {
     -fx-background-color: transparent;
     -fx-pref-width: 8;
@@ -964,12 +946,6 @@
     -fx-background-color: #2b7583;
 }
 
-/* Ensure content doesn't overflow */
-.scroll-pane {
+.scroll-pane{
     -fx-fit-to-width: true;
-    -fx-fit-to-height: true;
-}
-
-.scroll-pane .viewport {
-    -fx-background-color: transparent;
 }

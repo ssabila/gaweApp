@@ -90,8 +90,6 @@ public class ManagerDashboardController {
         }
     }
 
-
-    // PERBAIKAN UTAMA: Menambahkan metode setScrollableContent()
     private void setScrollableContent(Region contentNode) {
         contentArea.getChildren().clear();
         ScrollPane scrollPane = new ScrollPane(contentNode);
@@ -167,7 +165,7 @@ public class ManagerDashboardController {
         VBox recentActivities = createRecentActivitiesSection();
 
         content.getChildren().addAll(title, quickActions, statsCards, recentActivities);
-        setScrollableContent(content); // PERBAIKAN: Menggunakan ScrollPane
+        setScrollableContent(content);
     }
 
     private HBox createQuickActions() {

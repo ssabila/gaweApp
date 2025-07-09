@@ -83,9 +83,9 @@ public class EmployeeDashboard extends Application {
             System.out.println("✅ Controller configured successfully");
 
             // Create scene and show
-            Scene scene = new Scene(root, 1366, 700);
+            Scene scene = new Scene(root, 1366, 768);
             stage.setScene(scene);
-            stage.setTitle("GAWE - Employee Dashboard - " + employee.getNama());
+            stage.setTitle("gawe - Employee Dashboard - " + employee.getNama());
             stage.show();
 
             System.out.println("✅ Employee Dashboard displayed successfully");
