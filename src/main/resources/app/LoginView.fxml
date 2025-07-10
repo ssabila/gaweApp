@@ -98,7 +98,7 @@
                             <children>
                                 <Label styleClass="demo-text" text="👔 Manager: MNG001 / password123" />
                                 <Label styleClass="demo-text" text="👨‍💼 Supervisor: SUP001 / password123" />
-                                <Label styleClass="demo-text" text="👤 Employee: EMP001 / password123" />
+                                <Label styleClass="demo-text" text="👤 Employee: EMP005 / password123" />
                             </children>
                         </VBox>
                     </children>
