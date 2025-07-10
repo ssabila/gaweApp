@@ -1006,7 +1006,12 @@ public class MySQLDataStore implements IDataStore {
         emp.setSisaCuti(rs.getInt("sisa_cuti"));
         emp.setGajiPokok(rs.getDouble("gaji_pokok"));
         emp.setKpiScore(rs.getDouble("kpi_score"));
+
+        double supervisorRating = rs.getDouble("supervisor_rating");
+
         emp.setSupervisorRating(rs.getDouble("supervisor_rating"));
+        emp.setOverallRating(supervisorRating);
+
         emp.setLayoffRisk(rs.getBoolean("layoff_risk"));
         return emp;
     }

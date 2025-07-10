@@ -729,6 +729,8 @@ public class SupervisorDashboardController {
 
         if (leaveApprovalsTable == null) {
             leaveApprovalsTable = createLeaveApprovalTable();
+        } else{
+            refreshLeaveApprovalsTable(leaveApprovalsTable);
         }
 
         content.getChildren().addAll(title, leaveApprovalsTable);
